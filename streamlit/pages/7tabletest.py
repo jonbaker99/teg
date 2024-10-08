@@ -131,7 +131,7 @@ AgGrid(
 
 # 4. Using `st.experimental_data_editor` (Editable Table)
 st.subheader("4. `st.data_editor` - Editable Table")
-edited_df = st.experimental_data_editor(lowest_rounds_gross, num_rows="dynamic")
+edited_df = st.data_editor(lowest_rounds_gross, num_rows="dynamic")
 st.write("Edited DataFrame:")
 st.write(edited_df)
 
@@ -139,10 +139,12 @@ st.write(edited_df)
 st.subheader("5. Custom HTML/CSS Table")
 # Apply custom styling to the DataFrame
 def generate_html_table(df):
-    return df.style.set_table_styles([
-        {'selector': 'th', 'props': [('background-color', '#f2f2f2'), ('font-size', '14px')]},
-        {'selector': 'td', 'props': [('font-size', '12px')]}
-    ]).hide_index().render()
+    return (df.style
+              .set_table_styles([
+                  {'selector': 'th', 'props': [('background-color', '#f2f2f2'), ('font-size', '14px')]},
+                  {'selector': 'td', 'props': [('font-size', '12px')]}
+              ])
+              .to_html(index=False))  # Use to_html() instead of render() and set index=False
 
 html_table = generate_html_table(lowest_rounds_gross)
 st.markdown(html_table, unsafe_allow_html=True)
@@ -162,15 +164,25 @@ st.json(lowest_rounds_gross.to_dict(orient='records'))
 
 # 8. Using `st.metric` for Summary Statistics
 st.subheader("8. `st.metric` - Summary Statistics")
+
+def parse_gross_score(score):
+    # Remove the '+' sign and split the string
+    parts = score.replace('+', '').split()
+    # Sum up all the numbers
+    return sum(int(part) for part in parts)
+
 if not lowest_rounds_gross.empty:
-    min_gross = lowest_rounds_gross['Gross'].min()
-    max_gross = lowest_rounds_gross['Gross'].max()
-    avg_gross = lowest_rounds_gross['Gross'].mean()
+    # Convert 'Gross' column to numeric values
+    gross_numeric = lowest_rounds_gross['Gross'].apply(parse_gross_score)
+    
+    min_gross = gross_numeric.min()
+    max_gross = gross_numeric.max()
+    avg_gross = gross_numeric.mean()
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("Minimum Gross", min_gross)
-    col2.metric("Average Gross", f"{avg_gross:.2f}")
-    col3.metric("Maximum Gross", max_gross)
+    col1.metric("Minimum Gross", f"+{min_gross}")
+    col2.metric("Average Gross", f"+{avg_gross:.2f}")
+    col3.metric("Maximum Gross", f"+{max_gross}")
 else:
     st.write("No data available for metrics.")
 
