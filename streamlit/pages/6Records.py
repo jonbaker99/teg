@@ -48,25 +48,35 @@ def find_best_rows(data, level_of_aggregation, fields_to_keep, field='GrossVP', 
     all_fields = fields_to_keep + [field]
 
     # Sort the data based on the 'ascending' property
-    sorted_data = (aggregated_data[all_fields]
-                   .sort_values(by=field, ascending=properties['ascending'])
-                   .head(top_n))
+    sorted_data = aggregated_data[all_fields].sort_values(by=field, ascending=properties['ascending'])
 
-    # Add ranking column (ranking order follows the 'ascending' property)
-    sorted_data['Rank'] = sorted_data[field].rank(ascending=properties['ascending'], method='min').astype(int).astype(str)
-    sorted_data.loc[sorted_data.duplicated('Rank', keep=False), 'Rank'] += '='
+    # Find the value at the nth position
+    if len(sorted_data) >= top_n:
+        nth_value = sorted_data.iloc[top_n - 1][field]
+    else:
+        nth_value = sorted_data.iloc[-1][field]
+
+    # Filter the data to include all rows that are at least as good as the nth value
+    if properties['ascending']:
+        result_data = sorted_data[sorted_data[field] <= nth_value]
+    else:
+        result_data = sorted_data[sorted_data[field] >= nth_value]
+
+    # Add ranking column
+    result_data['Rank'] = result_data[field].rank(ascending=properties['ascending'], method='min').astype(int).astype(str)
+    result_data.loc[result_data.duplicated('Rank', keep=False), 'Rank'] += '='
     
     # Reorder and rename columns
-    sorted_data = sorted_data[['Rank'] + all_fields]
-    sorted_data.rename(columns={field: properties['new_name']}, inplace=True)
+    result_data = result_data[['Rank'] + all_fields]
+    result_data.rename(columns={field: properties['new_name']}, inplace=True)
     
     # Apply formatting to the chosen field
-    sorted_data[properties['new_name']] = sorted_data[properties['new_name']].apply(properties['formatter'])
+    result_data[properties['new_name']] = result_data[properties['new_name']].apply(properties['formatter'])
     
     # Apply formatting to all numeric columns
-    sorted_data = sorted_data.applymap(lambda x: int(x) if isinstance(x, (int, float)) else x)
+    result_data = result_data.applymap(lambda x: int(x) if isinstance(x, (int, float)) else x)
 
-    return sorted_data
+    return result_data
 
 # Load data
 all_data = load_data()
@@ -87,6 +97,11 @@ def combine_teg_and_round(df):
     df = df.drop(columns=['TEG'])
     
     return df
+
+lowest_rounds_gross = combine_teg_and_round(lowest_rounds_gross)
+lowest_rounds_sc = combine_teg_and_round(lowest_rounds_sc)
+lowest_rounds_net = combine_teg_and_round(lowest_rounds_net)
+best_rounds_stableford = combine_teg_and_round(best_rounds_stableford)
 
 def custom_align_data(df):
     aligned_df = df.copy()
