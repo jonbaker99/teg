@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import logging
 from typing import Optional
-from utils.data_utilities import (
+from utils import (
     process_round_for_all_scores,
     get_google_sheet,
     reshape_round_data,

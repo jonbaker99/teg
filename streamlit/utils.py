@@ -331,3 +331,50 @@ def check_for_complete_and_duplicate_data(all_scores_path: str, all_data_path: s
         logger.info("No duplicate data found in all-data.parquet.")
     
     return summary
+
+# utilities.py
+
+# Mapping of TEGs to their total number of rounds
+TEG_ROUNDS = {
+    'TEG 1': 4,
+    'TEG 2': 3,
+    'TEG 3': 4,
+    'TEG 4': 4
+    # Add more TEGs if necessary
+}
+
+def get_teg_rounds(TEG):
+    """
+    Function to return the number of rounds for a given TEG.
+    If the TEG is not found in the dictionary, return 4 as the default value.
+    
+    Args:
+    TEG (str): The TEG identifier (e.g., 'TEG 1', 'TEG 2', etc.)
+    
+    Returns:
+    int: The total number of rounds for the given TEG, defaulting to 4 if not found.
+    """
+    return TEG_ROUNDS.get(TEG, 4)
+
+# Generalized aggregation function with dynamic level of aggregation
+def aggregate_data(data, aggregation_level, measures=['Sc', 'GrossVP', 'NetVP', 'Stableford']):
+    levels = {
+        'Pl': ['Pl', 'Player'],
+        'TEG': ['Pl', 'TEG', 'Player', 'TEGNum'],
+        'Round': ['Pl', 'TEG', 'Round', 'Player', 'TEGNum'],
+        'FrontBack': ['Pl', 'TEG', 'Round', 'FrontBack', 'Player', 'TEGNum']
+    }
+    
+    if aggregation_level not in levels:
+        raise ValueError(f"Invalid aggregation level: {aggregation_level}. Choose from: {list(levels.keys())}")
+    
+    group_columns = levels[aggregation_level]
+    return data.groupby(group_columns, as_index=False)[measures].sum().sort_values(by=group_columns)
+
+def format_vs_par(value):
+    if value > 0:
+        return f"+{int(value)}"
+    elif value < 0:
+        return f"{int(value)}"
+    else:
+        return "="
