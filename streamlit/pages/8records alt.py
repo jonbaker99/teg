@@ -2,20 +2,12 @@ import streamlit as st
 import pandas as pd
 from utils import aggregate_data, format_vs_par
 
-# Import additional libraries for advanced table displays
-# Make sure to install these packages if you haven't already:
-# pip install streamlit-aggrid
-from st_aggrid import AgGrid, GridOptionsBuilder
-from st_aggrid.shared import GridUpdateMode
-
 # Set the title of the app
 st.title("Best Rounds")
-topn = 3
-
 
 # Sidebar for user input
 st.sidebar.header("Settings")
-n_keep = st.sidebar.number_input("Number of Rows to Keep", min_value=1, max_value=100, value=topn, step=1)
+n_keep = st.sidebar.number_input("Number of Rows to Keep", min_value=1, max_value=100, value=10, step=1)
 
 @st.cache_data
 def load_data():
@@ -24,7 +16,7 @@ def load_data():
     data = data[~data['TEG'].isin(['TEG 2', 'TEG 50'])]
     return data
 
-def find_best_rows(data, level_of_aggregation, fields_to_keep, field='GrossVP', top_n=topn):
+def find_best_rows(data, level_of_aggregation, fields_to_keep, field='GrossVP', top_n=10):
     # Aggregate the data based on the provided level of aggregation
     aggregated_data = aggregate_data(data, level_of_aggregation)
     
@@ -93,7 +85,7 @@ best_rounds_stableford = find_best_rows(all_data, 'Round', rd_fields, 'Stablefor
 
 def combine_teg_and_round(df):
     # Create a new 'Round' column by combining 'TEG' and 'Round'
-    df['Round'] = df['TEG'] + r' | round ' + df['Round'].astype(str)
+    df['Round'] = df['TEG'] + ' | round ' + df['Round'].astype(str)
     
     # Remove the 'TEG' column
     df = df.drop(columns=['TEG'])
@@ -105,25 +97,13 @@ lowest_rounds_sc = combine_teg_and_round(lowest_rounds_sc)
 lowest_rounds_net = combine_teg_and_round(lowest_rounds_net)
 best_rounds_stableford = combine_teg_and_round(best_rounds_stableford)
 
-def custom_align_data(df):
-    aligned_df = df.copy()
-    for col in aligned_df.columns:
-        if col in ['Player', 'Round']:
-            # Left align Player and Round columns
-            aligned_df[col] = aligned_df[col].apply(lambda x: f"<div style='text-align: left;'>{x}</div>")
-        else:
-            # Center align other columns
-            aligned_df[col] = aligned_df[col].apply(lambda x: f"<div style='text-align: center;'>{x}</div>")
-    return aligned_df
-
-def display_custom_aligned_df(df, title):
+def display_streamlit_table(df, title):
     st.subheader(title)
-    aligned_df = custom_align_data(df)
-    st.write(aligned_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+    st.table(df)
 
 # Display DataFrames
-display_custom_aligned_df(lowest_rounds_gross, "Best Gross")
+display_streamlit_table(lowest_rounds_gross, "Best Gross")
 st.markdown("---")
-display_custom_aligned_df(best_rounds_stableford, "Best Stableford")
+display_streamlit_table(best_rounds_stableford, "Best Stableford")
 st.markdown("---")
-display_custom_aligned_df(lowest_rounds_net, "Best Net")
+display_streamlit_table(lowest_rounds_net, "Best Net")
