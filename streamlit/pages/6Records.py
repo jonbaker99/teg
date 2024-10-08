@@ -99,13 +99,6 @@ def custom_align_data(df):
             aligned_df[col] = aligned_df[col].apply(lambda x: f"<div style='text-align: center;'>{x}</div>")
     return aligned_df
 
-# Apply combine_teg_and_round to your DataFrames
-lowest_rounds_gross = combine_teg_and_round(lowest_rounds_gross)
-lowest_rounds_sc = combine_teg_and_round(lowest_rounds_sc)
-lowest_rounds_net = combine_teg_and_round(lowest_rounds_net)
-best_rounds_stableford = combine_teg_and_round(best_rounds_stableford)
-
-# Function to display DataFrame with custom alignment
 def display_custom_aligned_df(df, title):
     st.subheader(title)
     aligned_df = custom_align_data(df)
@@ -113,8 +106,7 @@ def display_custom_aligned_df(df, title):
 
 # Display DataFrames
 display_custom_aligned_df(lowest_rounds_gross, "Best Gross")
-"---"
+st.markdown("---")
 display_custom_aligned_df(best_rounds_stableford, "Best Stableford")
-"---"
+st.markdown("---")
 display_custom_aligned_df(lowest_rounds_net, "Best Net")
-
