@@ -79,29 +79,42 @@ lowest_rounds_sc = find_best_rows(all_data, 'Round', rd_fields, 'Sc', n_keep)
 lowest_rounds_net = find_best_rows(all_data, 'Round', rd_fields, 'NetVP', n_keep)
 best_rounds_stableford = find_best_rows(all_data, 'Round', rd_fields, 'Stableford', n_keep)
 
+def combine_teg_and_round(df):
+    # Create a new 'Round' column by combining 'TEG' and 'Round'
+    df['Round'] = df['TEG'] + r' | round ' + df['Round'].astype(str)
+    
+    # Remove the 'TEG' column
+    df = df.drop(columns=['TEG'])
+    
+    return df
 
+def custom_align_data(df):
+    aligned_df = df.copy()
+    for col in aligned_df.columns:
+        if col in ['Player', 'Round']:
+            # Left align Player and Round columns
+            aligned_df[col] = aligned_df[col].apply(lambda x: f"<div style='text-align: left;'>{x}</div>")
+        else:
+            # Center align other columns
+            aligned_df[col] = aligned_df[col].apply(lambda x: f"<div style='text-align: center;'>{x}</div>")
+    return aligned_df
 
-# Display the results
-st.header("Best Gross")
-st.dataframe(lowest_rounds_gross, hide_index=True)
+# Apply combine_teg_and_round to your DataFrames
+lowest_rounds_gross = combine_teg_and_round(lowest_rounds_gross)
+lowest_rounds_sc = combine_teg_and_round(lowest_rounds_sc)
+lowest_rounds_net = combine_teg_and_round(lowest_rounds_net)
+best_rounds_stableford = combine_teg_and_round(best_rounds_stableford)
 
+# Function to display DataFrame with custom alignment
+def display_custom_aligned_df(df, title):
+    st.subheader(title)
+    aligned_df = custom_align_data(df)
+    st.write(aligned_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
+# Display DataFrames
+display_custom_aligned_df(lowest_rounds_gross, "Best Gross")
+"---"
+display_custom_aligned_df(best_rounds_stableford, "Best Stableford")
+"---"
+display_custom_aligned_df(lowest_rounds_net, "Best Net")
 
-
-# st.header("Best Score")
-# st.dataframe(lowest_rounds_sc, hide_index=True)
-
-
-st.header("Best Stableford")
-st.dataframe(best_rounds_stableford, hide_index=True)
-
-
-st.header("Best Net")
-st.dataframe(lowest_rounds_net, hide_index=True)
-
-# Function to create column configuration for centered alignment
-def create_centered_column_config(df):
-    return {col: st.column_config.Column(align="center") for col in df.columns if col != 'Player'}
-
-st.header("Best Gross centred?")
-st.dataframe(lowest_rounds_gross, hide_index=True, column_config=create_centered_column_config(lowest_rounds_gross))
