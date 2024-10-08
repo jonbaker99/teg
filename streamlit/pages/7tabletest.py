@@ -2,6 +2,12 @@ import streamlit as st
 import pandas as pd
 from utils import aggregate_data, format_vs_par
 
+# Import additional libraries for advanced table displays
+# Make sure to install these packages if you haven't already:
+# pip install streamlit-aggrid
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import GridUpdateMode
+
 # Set the title of the app
 st.title("Best Rounds")
 
@@ -78,10 +84,148 @@ st.header("Best Gross")
 st.dataframe(lowest_rounds_gross, hide_index=True)
 
 # st.header("Best Score")
-# st.dataframe(lowest_rounds_sc)
+# st.dataframe(lowest_rounds_sc, hide_index=True)
 
-st.header("Best Stableford")
-st.dataframe(best_rounds_stableford, hide_index=True)
+# st.header("Best Net")
+# st.dataframe(lowest_rounds_net, hide_index=True)
 
-st.header("Best Net")
-st.dataframe(lowest_rounds_net, hide_index=True)
+# st.header("Best Stableford")
+# st.dataframe(best_rounds_stableford, hide_index=True)
+
+# -----------------------------------------------------------
+# Additional Examples of Displaying Tables Using `lowest_rounds_gross`
+# -----------------------------------------------------------
+
+st.markdown("---")
+st.header("Additional Table Display Examples using `lowest_rounds_gross`")
+
+# 1. Using `st.table` (Static Table)
+st.subheader("1. `st.table` - Static Table")
+st.table(lowest_rounds_gross)
+
+# 2. Using `st.write` (Automatic Rendering)
+st.subheader("2. `st.write` - Automatic Rendering")
+st.write("Here is the `lowest_rounds_gross` data displayed using `st.write`:")
+st.write(lowest_rounds_gross)
+
+# 3. Using `st.aggrid` (Interactive Table with AG Grid)
+st.subheader("3. `st_aggrid` - Interactive AG Grid Table")
+
+# Configure Grid Options
+gb = GridOptionsBuilder.from_dataframe(lowest_rounds_gross)
+gb.configure_pagination(paginationAutoPageSize=True)  # Enable pagination
+gb.configure_side_bar()  # Add a sidebar for additional options
+gb.configure_selection(selection_mode="multiple", use_checkbox=True)  # Enable row selection
+grid_options = gb.build()
+
+# Display the grid
+AgGrid(
+    lowest_rounds_gross,
+    gridOptions=grid_options,
+    enable_enterprise_modules=True,
+    update_mode=GridUpdateMode.MODEL_CHANGED,
+    theme='streamlit',  # Other themes: 'light', 'dark', etc.
+    height=400,
+    fit_columns_on_grid_load=True
+)
+
+# 4. Using `st.experimental_data_editor` (Editable Table)
+st.subheader("4. `st.experimental_data_editor` - Editable Table")
+edited_df = st.experimental_data_editor(lowest_rounds_gross, num_rows="dynamic")
+st.write("Edited DataFrame:")
+st.write(edited_df)
+
+# 5. Using Custom HTML/CSS (Highly Customized Table)
+st.subheader("5. Custom HTML/CSS Table")
+# Apply custom styling to the DataFrame
+def generate_html_table(df):
+    return df.style.set_table_styles([
+        {'selector': 'th', 'props': [('background-color', '#f2f2f2'), ('font-size', '14px')]},
+        {'selector': 'td', 'props': [('font-size', '12px')]}
+    ]).hide_index().render()
+
+html_table = generate_html_table(lowest_rounds_gross)
+st.markdown(html_table, unsafe_allow_html=True)
+
+# 6. Using `streamlit-datatable` (Flexible and Interactive Datatable)
+# Note: Uncomment the following lines if you have streamlit-datatable installed
+# Make sure to install it first using: pip install streamlit-datatable
+
+# from streamlit_datatable import st_datatable
+
+# st.subheader("6. `streamlit-datatable` - Flexible Interactive Table")
+# st_datatable(lowest_rounds_gross, hide_index=True)
+
+# 7. Using `st.json` (JSON Representation)
+st.subheader("7. `st.json` - JSON Representation")
+st.json(lowest_rounds_gross.to_dict(orient='records'))
+
+# 8. Using `st.metric` for Summary Statistics
+st.subheader("8. `st.metric` - Summary Statistics")
+if not lowest_rounds_gross.empty:
+    min_gross = lowest_rounds_gross['Gross'].min()
+    max_gross = lowest_rounds_gross['Gross'].max()
+    avg_gross = lowest_rounds_gross['Gross'].mean()
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Minimum Gross", min_gross)
+    col2.metric("Average Gross", f"{avg_gross:.2f}")
+    col3.metric("Maximum Gross", max_gross)
+else:
+    st.write("No data available for metrics.")
+
+# 9. Using `st.plotly_chart` to Visualize Data
+st.subheader("9. `st.plotly_chart` - Gross Values Bar Chart")
+import plotly.express as px
+
+if not lowest_rounds_gross.empty:
+    fig = px.bar(lowest_rounds_gross, x='Player', y='Gross', title='Gross Values by Player')
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.write("No data available for plotting.")
+
+# 10. Using `st.pyplot` with Matplotlib
+st.subheader("10. `st.pyplot` - Gross Values Line Chart")
+import matplotlib.pyplot as plt
+
+if not lowest_rounds_gross.empty:
+    fig, ax = plt.subplots()
+    ax.plot(lowest_rounds_gross['Player'], lowest_rounds_gross['Gross'], marker='o')
+    ax.set_title('Gross Values by Player')
+    ax.set_xlabel('Player')
+    ax.set_ylabel('Gross')
+    ax.grid(True)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+else:
+    st.write("No data available for plotting.")
+
+# 11. Using `st.altair_chart` with Altair
+st.subheader("11. `st.altair_chart` - Gross Values Scatter Plot")
+import altair as alt
+
+if not lowest_rounds_gross.empty:
+    chart = alt.Chart(lowest_rounds_gross).mark_circle(size=60).encode(
+        x='Player',
+        y='Gross',
+        tooltip=['Player', 'Gross']
+    ).interactive().properties(
+        title='Gross Values by Player'
+    )
+    st.altair_chart(chart, use_container_width=True)
+else:
+    st.write("No data available for plotting.")
+
+# 12. Using `st.vega_lite_chart` with Vega-Lite
+st.subheader("12. `st.vega_lite_chart` - Gross Values Area Chart")
+if not lowest_rounds_gross.empty:
+    st.vega_lite_chart(lowest_rounds_gross, {
+        'mark': 'area',
+        'encoding': {
+            'x': {'field': 'Player', 'type': 'ordinal'},
+            'y': {'field': 'Gross', 'type': 'quantitative'},
+            'color': {'field': 'Player', 'type': 'nominal'}
+        }
+    }, use_container_width=True)
+else:
+    st.write("No data available for plotting.")

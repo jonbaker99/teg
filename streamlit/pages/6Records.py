@@ -2,6 +2,12 @@ import streamlit as st
 import pandas as pd
 from utils import aggregate_data, format_vs_par
 
+# Import additional libraries for advanced table displays
+# Make sure to install these packages if you haven't already:
+# pip install streamlit-aggrid
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import GridUpdateMode
+
 # Set the title of the app
 st.title("Best Rounds")
 
@@ -73,15 +79,35 @@ lowest_rounds_sc = find_best_rows(all_data, 'Round', rd_fields, 'Sc', n_keep)
 lowest_rounds_net = find_best_rows(all_data, 'Round', rd_fields, 'NetVP', n_keep)
 best_rounds_stableford = find_best_rows(all_data, 'Round', rd_fields, 'Stableford', n_keep)
 
+
+
 # Display the results
 st.header("Best Gross")
 st.dataframe(lowest_rounds_gross, hide_index=True)
 
+
+
+
 # st.header("Best Score")
-# st.dataframe(lowest_rounds_sc)
+# st.dataframe(lowest_rounds_sc, hide_index=True)
+
 
 st.header("Best Stableford")
 st.dataframe(best_rounds_stableford, hide_index=True)
 
+
 st.header("Best Net")
 st.dataframe(lowest_rounds_net, hide_index=True)
+
+# Function to create centered CSS for all columns except 'Player'
+def make_center_aligned_cols(df):
+    return {col: ('text-align: center', ) for col in df.columns if col != 'Player'}
+
+# Apply the styling
+styled_df = df.style.set_table_styles([
+    {'selector': 'th', 'props': [('text-align', 'center')]},
+    {'selector': 'td', 'props': [('text-align', 'center')]}
+]).set_properties(**{'text-align': 'left'}, subset=['Player'])
+
+st.header("Best Gross Styled")
+st.dataframe(style_df(lowest_rounds_gross), hide_index=True)
