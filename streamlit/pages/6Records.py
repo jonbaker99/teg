@@ -99,15 +99,9 @@ st.dataframe(best_rounds_stableford, hide_index=True)
 st.header("Best Net")
 st.dataframe(lowest_rounds_net, hide_index=True)
 
-# Function to create centered CSS for all columns except 'Player'
-def make_center_aligned_cols(df):
-    return {col: ('text-align: center', ) for col in df.columns if col != 'Player'}
+# Function to create column configuration for centered alignment
+def create_centered_column_config(df):
+    return {col: st.column_config.Column(align="center") for col in df.columns if col != 'Player'}
 
-# Apply the styling
-styled_df = df.style.set_table_styles([
-    {'selector': 'th', 'props': [('text-align', 'center')]},
-    {'selector': 'td', 'props': [('text-align', 'center')]}
-]).set_properties(**{'text-align': 'left'}, subset=['Player'])
-
-st.header("Best Gross Styled")
-st.dataframe(style_df(lowest_rounds_gross), hide_index=True)
+st.header("Best Gross centred?")
+st.dataframe(lowest_rounds_gross, hide_index=True, column_config=create_centered_column_config(lowest_rounds_gross))

@@ -130,7 +130,7 @@ AgGrid(
 )
 
 # 4. Using `st.experimental_data_editor` (Editable Table)
-st.subheader("4. `st.experimental_data_editor` - Editable Table")
+st.subheader("4. `st.data_editor` - Editable Table")
 edited_df = st.experimental_data_editor(lowest_rounds_gross, num_rows="dynamic")
 st.write("Edited DataFrame:")
 st.write(edited_df)
