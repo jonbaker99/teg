@@ -1,4 +1,4 @@
-from streamlit.utils import update_all_data, check_for_complete_and_duplicate_data
+from utils import update_all_data, check_for_complete_and_duplicate_data
 
 # Define file paths
 ALL_SCORES_PATH = '../data/all-scores.csv'
