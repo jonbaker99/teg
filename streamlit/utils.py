@@ -9,6 +9,10 @@ from typing import Dict, Any
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+CONFIG: Dict[str, str] = {
+    "ROUND_INFO_PATH": "../data/round_info.csv"
+}
+
 # Function to retrieve player name from initials
 def get_player_name(initials: str) -> str:
     """
@@ -244,6 +248,20 @@ def summarise_existing_rd_data(existing_rows: pd.DataFrame) -> pd.DataFrame:
     logger.info("Existing round data summarized.")
     return summary
 
+def add_round_info(all_data):
+    # Read the round info CSV file
+    round_info = pd.read_csv(CONFIG["ROUND_INFO_PATH"])
+
+    # Merge the round info with all_data based on TEGNum and Round
+    merged_data = pd.merge(
+        all_data,
+        round_info[['TEGNum', 'Round', 'Date', 'Course']],
+        on=['TEGNum', 'Round'],
+        how='left'
+    )
+
+    return merged_data
+
 def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> None:
     """
     Load data from a CSV file, apply cumulative scores and averages, and save it as both a Parquet file and a CSV file.
@@ -259,6 +277,10 @@ def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> N
     df = pd.read_csv(csv_file)
     logger.debug("CSV data loaded.")
     
+    # Add round info
+    df = add_round_info(df)
+    logger.debug("Round info added.")
+
     # Apply cumulative score and average calculations
     df_transformed = add_cumulative_scores(df)
     logger.debug("Cumulative scores and averages applied.")
@@ -269,6 +291,8 @@ def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> N
     # Save the transformed dataframe to a CSV file for manual review
     df_transformed.to_csv(csv_output_file, index=False)
     logger.info(f"Transformed data saved to {csv_output_file}")
+
+
 
 def check_for_complete_and_duplicate_data(all_scores_path: str, all_data_path: str) -> Dict[str, pd.DataFrame]:
     """

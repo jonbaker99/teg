@@ -1,13 +1,17 @@
 import streamlit as st
 import pandas as pd
 from utils import aggregate_data, format_vs_par
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import GridUpdateMode
 
 # Set the title of the app
-st.title("Best Rounds")
+st.title("Using streamlit table instead of html or dataframe")
+
+n = 3
 
 # Sidebar for user input
 st.sidebar.header("Settings")
-n_keep = st.sidebar.number_input("Number of Rows to Keep", min_value=1, max_value=100, value=10, step=1)
+n_keep = st.sidebar.number_input("Number of Rows to Keep", min_value=1, max_value=100, value=n, step=1)
 
 @st.cache_data
 def load_data():
@@ -102,8 +106,57 @@ def display_streamlit_table(df, title):
     st.table(df)
 
 # Display DataFrames
-display_streamlit_table(lowest_rounds_gross, "Best Gross")
+display_streamlit_table(lowest_rounds_gross, "Best Gross - streamlit table")
 st.markdown("---")
-display_streamlit_table(best_rounds_stableford, "Best Stableford")
+display_streamlit_table(best_rounds_stableford, "Best Stableford - streamlit table")
 st.markdown("---")
-display_streamlit_table(lowest_rounds_net, "Best Net")
+display_streamlit_table(lowest_rounds_net, "Best Net - streamlit table")
+
+
+
+
+def display_aggrid_table(df, title):
+    st.subheader(title)
+    
+    # Configure grid options
+    gb = GridOptionsBuilder.from_dataframe(df)
+    gb.configure_default_column(
+        maxWidth = 100,
+        cellStyle={'text-align': 'center'},  # Center align all columns by default
+        #headerClass='center-aligned-header',  # Custom class for header alignment
+        filterable = False,
+        sortable = False
+    )
+    # gb.configure_default_column(filterable = False, sorteable = False, maxWidth = 100)
+    gb.configure_column("Player", minWidth=130, maxWidth=150,  cellStyle={'text-align': 'left'})
+    gb.configure_column("Round", minWidth=130,maxWidth=150, cellStyle={'text-align': 'left'})
+    gb.configure_column("Rank", maxWidth=50, type=["numericColumn", "customNumericFormat"], precision=0)
+    gb.configure_selection('disabled')  # Enable row selection
+    gb.configure_grid_options(domLayout='normal')  # Ensures the grid size adapts to its container
+    
+    gridOptions = gb.build()
+    
+    # Display the grid
+    grid_response = AgGrid(
+        df,
+        gridOptions=gridOptions,
+        #height=300,  # Set a fixed height. Adjust as needed.
+        data_return_mode='AS_INPUT', 
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        fit_columns_on_grid_load=True,
+        allow_unsafe_jscode=True  # Set to True to allow jsfunction to be injected
+    )
+    
+    # You can handle selection here if needed
+    selected = grid_response['selected_rows']
+    if selected:
+        st.write("Selected row:", selected[0])
+
+# ... (keep the existing data loading and processing code)
+
+# Display DataFrames using ag-Grid
+display_aggrid_table(lowest_rounds_gross, "Best Gross - aggrid_table")
+st.markdown("---")
+display_aggrid_table(best_rounds_stableford, "Best Stableford - aggrid_table")
+st.markdown("---")
+display_aggrid_table(lowest_rounds_net, "Best Net - aggrid_table")
