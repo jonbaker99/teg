@@ -384,8 +384,8 @@ def aggregate_data(data, aggregation_level, measures=['Sc', 'GrossVP', 'NetVP', 
     levels = {
         'Pl': ['Pl', 'Player'],
         'TEG': ['Pl', 'TEG', 'Player', 'TEGNum'],
-        'Round': ['Pl', 'TEG', 'Round', 'Player', 'TEGNum'],
-        'FrontBack': ['Pl', 'TEG', 'Round', 'FrontBack', 'Player', 'TEGNum']
+        'Round': ['Pl', 'TEG', 'Round', 'Player', 'TEGNum','Course'],
+        'FrontBack': ['Pl', 'TEG', 'Round', 'FrontBack', 'Player', 'TEGNum','Course']
     }
     
     if aggregation_level not in levels:

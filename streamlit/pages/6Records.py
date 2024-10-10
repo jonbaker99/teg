@@ -83,7 +83,7 @@ def find_best_rows(data, level_of_aggregation, fields_to_keep, field='GrossVP', 
 # Load data
 all_data = load_data()
 
-rd_fields = ['Player', 'TEG', 'Round']
+rd_fields = ['Player', 'TEG', 'Round', 'Course']
 
 # Find best rows for each category
 lowest_rounds_gross = find_best_rows(all_data, 'Round', rd_fields, 'GrossVP', n_keep)
@@ -93,7 +93,7 @@ best_rounds_stableford = find_best_rows(all_data, 'Round', rd_fields, 'Stablefor
 
 def combine_teg_and_round(df):
     # Create a new 'Round' column by combining 'TEG' and 'Round'
-    df['Round'] = df['TEG'] + r' | round ' + df['Round'].astype(str)
+    df['Round'] = df['TEG'] + r' | Round ' + df['Round'].astype(str)
     
     # Remove the 'TEG' column
     df = df.drop(columns=['TEG'])
@@ -108,7 +108,7 @@ best_rounds_stableford = combine_teg_and_round(best_rounds_stableford)
 def custom_align_data(df):
     aligned_df = df.copy()
     for col in aligned_df.columns:
-        if col in ['Player', 'Round']:
+        if col in ['Player', 'Round', 'Course']:
             # Left align Player and Round columns
             aligned_df[col] = aligned_df[col].apply(lambda x: f"<div style='text-align: left;'>{x}</div>")
         else:
@@ -120,6 +120,7 @@ def display_custom_aligned_df(df, title):
     st.subheader(title)
     aligned_df = custom_align_data(df)
     st.write(aligned_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 # Display DataFrames
 display_custom_aligned_df(lowest_rounds_gross, "Best Gross")
