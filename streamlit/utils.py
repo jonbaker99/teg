@@ -361,8 +361,6 @@ def check_for_complete_and_duplicate_data(all_scores_path: str, all_data_path: s
 TEG_ROUNDS = {
     'TEG 1': 4,
     'TEG 2': 3,
-    'TEG 3': 4,
-    'TEG 4': 4
     # Add more TEGs if necessary
 }
 

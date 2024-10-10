@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 # Data for the player scores table
 player_scores = pd.DataFrame({
     'Player': ['David MULLIN', 'Jon BAKER', 'Stuart NEUMANN', 'Gregg WILLIAMS', 'Henry MELLER'],
