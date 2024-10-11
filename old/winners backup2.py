@@ -74,7 +74,7 @@ def create_bar_chart(df, x_col, y_col, title):
         color=alt.value('steelblue')
     ).properties(
         title=title,
-        width=200,
+        width=350,
         height=300
     )
     
@@ -93,7 +93,7 @@ def create_vertical_bar_chart(df, y_col, x_col, title, player_order):
         color=alt.value('steelblue')
     ).properties(
         title=title,
-        width=200,
+        width=250,
         height=300
     )
     
@@ -103,7 +103,7 @@ def create_vertical_bar_chart(df, y_col, x_col, title, player_order):
     return chart + text
 
 # === DISPLAY HORIZONTAL BAR CHARTS === #
-st.title("Player Wins Bar Charts")
+st.subheader("Player Wins Bar Charts")
 
 # 3-Column layout for Trophy, Jacket, Spoon (Horizontal Bars)
 col1, col2, col3 = st.columns(3)
@@ -121,7 +121,7 @@ with col3:
     st.altair_chart(spoon_chart, use_container_width=True)
 
 # === DISPLAY VERTICAL COLUMN CHARTS (SORTED BY WINS DESCENDING) === #
-st.title("Player Wins Vertical Column Charts")
+st.subheader("Player Wins Vertical Column Charts")
 
 col1, col2, col3 = st.columns(3)
 

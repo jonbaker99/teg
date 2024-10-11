@@ -1,28 +1,61 @@
 import pandas as pd
-from math import floor
-import gspread
-from google.oauth2.service_account import Credentials
+import numpy as np
 import logging
-from typing import Dict, Any
+from math import floor
+from google.oauth2.service_account import Credentials
+import gspread
+from typing import Dict, Any, List
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Constants and Configurations
 CONFIG: Dict[str, str] = {
     "ROUND_INFO_PATH": "../data/round_info.csv"
 }
 
 FILE_PATH_ALL_DATA = '../data/all-data.parquet'
+TOTAL_HOLES = 18
+
+PLAYER_DICT = {
+    'AB': 'Alex BAKER',
+    'JB': 'Jon BAKER',
+    'DM': 'David MULLIN',
+    'GW': 'Gregg WILLIAMS',
+    'HM': 'Henry MELLER',
+    'SN': 'Stuart NEUMANN',
+    'JP': 'John PATTERSON',
+    # Add more player initials and names as needed
+}
+
+TEG_ROUNDS = {
+    'TEG 1': 1,
+    'TEG 2': 3,
+    # Add more TEGs if necessary
+}
+
+TEG_OVERRIDES = {
+    'TEG 5': {
+        'Best Net': 'Gregg WILLIAMS',
+        'Best Gross': 'Stuart NEUMANN*'
+    }
+}
 
 
-def load_all_data():
+def load_all_data() -> pd.DataFrame:
     """
-    Function to load the main dataset from the specified file path.
-    """
-    return pd.read_parquet(FILE_PATH_ALL_DATA)
+    Load the main dataset from the specified file path.
 
-# Function to retrieve player name from initials
+    Returns:
+        pd.DataFrame: The main dataset.
+    """
+    df = pd.read_parquet(FILE_PATH_ALL_DATA)
+    # Ensure 'Year' is of integer type
+    df['Year'] = df['Year'].astype('Int64')
+    return df
+
+
 def get_player_name(initials: str) -> str:
     """
     Retrieve the player's full name based on their initials.
@@ -33,17 +66,8 @@ def get_player_name(initials: str) -> str:
     Returns:
         str: Full name of the player or 'Unknown Player' if not found.
     """
-    player_dict = {
-        'AB': 'Alex BAKER',
-        'JB': 'Jon BAKER',
-        'DM': 'David MULLIN',
-        'GW': 'Gregg WILLIAMS',
-        'HM': 'Henry MELLER',
-        'SN': 'Stuart NEUMANN',
-        'JP': 'John PATTERSON',
-        # Add more player initials and names as needed
-    }
-    return player_dict.get(initials.upper(), 'Unknown Player')
+    return PLAYER_DICT.get(initials.upper(), 'Unknown Player')
+
 
 def process_round_for_all_scores(long_df: pd.DataFrame, hc_long: pd.DataFrame) -> pd.DataFrame:
     """
@@ -57,74 +81,61 @@ def process_round_for_all_scores(long_df: pd.DataFrame, hc_long: pd.DataFrame) -
         pd.DataFrame: Processed DataFrame with additional computed columns.
     """
     logger.info("Processing rounds for all scores.")
-    
-    # Replace 'Score' with 'Sc' if it exists
-    if 'Score' in long_df.columns:
-        long_df['Sc'] = long_df['Score']
-        long_df.drop('Score', axis=1, inplace=True)
-        logger.debug("'Score' column renamed to 'Sc'.")
-    else:
-        logger.warning("'Score' column not found. Skipping 'Sc' creation.")
-    
-    # Rename 'Par' to 'PAR'
-    if 'Par' in long_df.columns:
-        long_df['PAR'] = long_df['Par']
-        long_df.drop('Par', axis=1, inplace=True)
-        logger.debug("'Par' column renamed to 'PAR'.")
-    else:
-        logger.warning("'Par' column not found. Skipping 'PAR' creation.")
-    
+
+    # Rename columns if they exist
+    long_df.rename(columns={'Score': 'Sc', 'Par': 'PAR'}, inplace=True)
+    for col in ['Sc', 'PAR']:
+        if col not in long_df.columns:
+            logger.warning(f"Column '{col}' not found.")
+
     # Create 'TEG' column
     long_df['TEG'] = 'TEG ' + long_df['TEGNum'].astype(str)
-    
+
     # Merge handicap data
     long_df = long_df.merge(hc_long, on=['TEG', 'Pl'], how='left')
-    logger.debug("Handicap data merged.")
-    
-    # Fill NaN values in 'HC' with 0
     long_df['HC'] = long_df['HC'].fillna(0)
-    
-    # Create 'HoleID'
-    long_df['HoleID'] = long_df.apply(
-        lambda row: f"T{int(row['TEGNum']):02}|R{int(row['Round']):02}|H{int(row['Hole']):02}", axis=1
+    logger.debug("Handicap data merged.")
+
+    # Create 'HoleID' using vectorized operations
+    long_df['HoleID'] = (
+        "T" + long_df['TEGNum'].astype(int).astype(str).str.zfill(2) +
+        "|R" + long_df['Round'].astype(int).astype(str).str.zfill(2) +
+        "|H" + long_df['Hole'].astype(int).astype(str).str.zfill(2)
     )
-    
-    # Determine 'FrontBack'
-    long_df['FrontBack'] = long_df['Hole'].apply(lambda hole: 'Front' if hole < 10 else 'Back')
-    
+
+    # Determine 'FrontBack' using vectorized operations
+    long_df['FrontBack'] = np.where(long_df['Hole'] < 10, 'Front', 'Back')
+
     # Map player names
     long_df['Player'] = long_df['Pl'].apply(get_player_name)
-    
-    # Calculate 'HCStrokes'
-    long_df['HCStrokes'] = long_df.apply(
-        lambda row: 1 * (row['HC'] % 18 >= row['SI']) + floor(row['HC'] / 18), axis=1
-    )
-    
-    # Calculate 'GrossVP'
+
+    # Calculate 'HCStrokes' using vectorized operations
+    long_df['HCStrokes'] = (long_df['HC'] // 18) + ((long_df['HC'] % 18 >= long_df['SI']).astype(int))
+
+    # Calculate scoring metrics
     long_df['GrossVP'] = long_df['Sc'] - long_df['PAR']
-    
-    # Calculate 'Net'
     long_df['Net'] = long_df['Sc'] - long_df['HCStrokes']
-    
-    # Calculate 'NetVP'
     long_df['NetVP'] = long_df['Net'] - long_df['PAR']
-    
-    # Calculate 'Stableford'
-    long_df['Stableford'] = long_df['NetVP'].apply(lambda x: max(0, 2 - x))
-    
+    long_df['Stableford'] = (2 - long_df['NetVP']).clip(lower=0)
+
     logger.info("Round processing completed.")
     return long_df
 
-def check_hc_strokes_combinations(transformed_df: pd.DataFrame) -> None:
+
+def check_hc_strokes_combinations(transformed_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Check and copy unique combinations of HC, SI, and HCStrokes to the clipboard.
+    Check unique combinations of HC, SI, and HCStrokes.
 
     Parameters:
         transformed_df (pd.DataFrame): DataFrame containing the transformed golf data.
+
+    Returns:
+        pd.DataFrame: DataFrame with unique combinations of HC, SI, and HCStrokes.
     """
     hc_si_strokes_df = transformed_df[['HC', 'SI', 'HCStrokes']].drop_duplicates()
-    hc_si_strokes_df.to_clipboard(index=False)
-    logger.info("Unique combinations of HC, SI, and HCStrokes copied to clipboard.")
+    logger.info("Unique combinations of HC, SI, and HCStrokes obtained.")
+    return hc_si_strokes_df
+
 
 def add_cumulative_scores(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -137,37 +148,38 @@ def add_cumulative_scores(df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: DataFrame with cumulative and average scores added.
     """
     logger.info("Adding cumulative scores and averages.")
-    
+
     # Sort data
-    df = df.sort_values(by=['Pl', 'TEGNum', 'Round', 'Hole'])
-    
+    df.sort_values(by=['Pl', 'TEGNum', 'Round', 'Hole'], inplace=True)
+
     # Create 'Hole Order Ever'
-    df['Hole Score'] = 1000 * df['TEGNum'] + 100 * df['Round'] + df['Hole']
-    df['Hole Order Ever'] = df['Hole Score'].rank(method='dense').astype(int)
-    df.drop(columns=['Hole Score'], inplace=True)
-    
+    df['Hole Order Ever'] = df.groupby(['Pl']).cumcount() + 1
+
     measures = ['Sc', 'GrossVP', 'NetVP', 'Stableford']
-    group_rd = ['Pl', 'TEGNum', 'Round']
-    group_teg = ['Pl', 'TEGNum']
-    group_career = ['Pl']
-    
+    groupings = {
+        'Round': ['Pl', 'TEGNum', 'Round'],
+        'TEG': ['Pl', 'TEGNum'],
+        'Career': ['Pl']
+    }
+
     for measure in measures:
-        df[f'{measure} Cum Round'] = df.groupby(group_rd)[measure].cumsum()
-        df[f'{measure} Cum TEG'] = df.groupby(group_teg)[measure].cumsum()
-        df[f'{measure} Cum Career'] = df.groupby(group_career)[measure].cumsum()
-    
+        for period, group_cols in groupings.items():
+            cum_col = f'{measure} Cum {period}'
+            df[cum_col] = df.groupby(group_cols)[measure].cumsum()
+
     # Add counts
-    df['TEG Count'] = df.groupby(group_teg).cumcount() + 1
-    df['Career Count'] = df.groupby(group_career).cumcount() + 1
-    
+    df['TEG Count'] = df.groupby(['Pl', 'TEGNum']).cumcount() + 1
+    df['Career Count'] = df.groupby('Pl').cumcount() + 1
+
     # Add averages
     for measure in measures:
         df[f'{measure} Round Avg'] = df[f'{measure} Cum Round'] / df['Hole']
         df[f'{measure} TEG Avg'] = df[f'{measure} Cum TEG'] / df['TEG Count']
         df[f'{measure} Career Avg'] = df[f'{measure} Cum Career'] / df['Career Count']
-    
+
     logger.info("Cumulative scores and averages added.")
     return df
+
 
 def save_to_parquet(df: pd.DataFrame, output_file: str) -> None:
     """
@@ -179,6 +191,7 @@ def save_to_parquet(df: pd.DataFrame, output_file: str) -> None:
     """
     df.to_parquet(output_file, index=False)
     logger.info(f"Data successfully saved to {output_file}")
+
 
 def get_google_sheet(sheet_name: str, worksheet_name: str, creds_path: str) -> pd.DataFrame:
     """
@@ -194,33 +207,42 @@ def get_google_sheet(sheet_name: str, worksheet_name: str, creds_path: str) -> p
     """
     logger.info(f"Fetching data from Google Sheet: {sheet_name}, Worksheet: {worksheet_name}")
     SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_file(creds_path, scopes=SCOPE)
-    client = gspread.authorize(creds)
-    sheet = client.open(sheet_name).worksheet(worksheet_name)
-    data = sheet.get_all_records()
-    df = pd.DataFrame(data)
-    logger.info("Data fetched successfully from Google Sheets.")
-    return df
+    try:
+        creds = Credentials.from_service_account_file(creds_path, scopes=SCOPE)
+        client = gspread.authorize(creds)
+        sheet = client.open(sheet_name).worksheet(worksheet_name)
+        data = sheet.get_all_records()
+        df = pd.DataFrame(data)
+        logger.info("Data fetched successfully from Google Sheets.")
+        return df
+    except Exception as e:
+        logger.error(f"Error fetching data from Google Sheets: {e}")
+        raise
 
-def reshape_round_data(df: pd.DataFrame, id_vars: list) -> pd.DataFrame:
+
+def reshape_round_data(df: pd.DataFrame, id_vars: List[str]) -> pd.DataFrame:
     """
     Reshape round data from wide to long format.
 
     Parameters:
         df (pd.DataFrame): Original wide-format DataFrame.
-        id_vars (list): List of identifier variables.
+        id_vars (List[str]): List of identifier variables.
 
     Returns:
         pd.DataFrame: Reshaped long-format DataFrame.
     """
     logger.info("Reshaping round data to long format.")
-    player_columns = df.columns[len(id_vars):].tolist()
-    long_df = pd.melt(df, id_vars=id_vars, value_vars=player_columns, var_name='Pl', value_name='Score')
+
+    # Identify player columns by excluding id_vars
+    player_columns = [col for col in df.columns if col not in id_vars]
+
+    long_df = df.melt(id_vars=id_vars, value_vars=player_columns, var_name='Pl', value_name='Score')
     long_df['Score'] = pd.to_numeric(long_df['Score'], errors='coerce')
     reshaped_df = long_df.dropna(subset=['Score'])
     reshaped_df = reshaped_df[reshaped_df['Score'] != 0]
     logger.info("Round data reshaped successfully.")
     return reshaped_df
+
 
 def load_and_prepare_handicap_data(file_path: str) -> pd.DataFrame:
     """
@@ -233,12 +255,17 @@ def load_and_prepare_handicap_data(file_path: str) -> pd.DataFrame:
         pd.DataFrame: Melted and cleaned handicap DataFrame.
     """
     logger.info(f"Loading handicap data from {file_path}")
-    hc_lookup = pd.read_csv(file_path)
-    hc_long = pd.melt(hc_lookup, id_vars='TEG', var_name='Pl', value_name='HC')
+    try:
+        hc_lookup = pd.read_csv(file_path)
+    except FileNotFoundError:
+        logger.error(f"File not found: {file_path}")
+        raise
+    hc_long = hc_lookup.melt(id_vars='TEG', var_name='Pl', value_name='HC')
     hc_long = hc_long.dropna(subset=['HC'])
     hc_long = hc_long[hc_long['HC'] != 0]
     logger.info("Handicap data loaded and prepared.")
     return hc_long
+
 
 def summarise_existing_rd_data(existing_rows: pd.DataFrame) -> pd.DataFrame:
     """
@@ -257,7 +284,19 @@ def summarise_existing_rd_data(existing_rows: pd.DataFrame) -> pd.DataFrame:
     logger.info("Existing round data summarized.")
     return summary
 
-def add_round_info(all_data):
+
+def add_round_info(all_data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add round information to the DataFrame.
+
+    Parameters:
+        all_data (pd.DataFrame): The main DataFrame containing golf data.
+
+    Returns:
+        pd.DataFrame: DataFrame with round information added.
+    """
+    logger.info("Adding round information to the data.")
+
     # Read the round info CSV file
     round_info = pd.read_csv(CONFIG["ROUND_INFO_PATH"])
 
@@ -271,6 +310,7 @@ def add_round_info(all_data):
 
     return merged_data
 
+
 def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> None:
     """
     Load data from a CSV file, apply cumulative scores and averages, and save it as both a Parquet file and a CSV file.
@@ -281,11 +321,15 @@ def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> N
         csv_output_file (str): Path to the output CSV file for review.
     """
     logger.info(f"Updating all data from {csv_file} to {parquet_file} and {csv_output_file}")
-    
+
     # Load the CSV file
-    df = pd.read_csv(csv_file)
-    logger.debug("CSV data loaded.")
-    
+    try:
+        df = pd.read_csv(csv_file)
+        logger.debug("CSV data loaded.")
+    except FileNotFoundError:
+        logger.error(f"CSV file not found: {csv_file}")
+        raise
+
     # Add round info
     df = add_round_info(df)
     logger.debug("Round info added.")
@@ -293,14 +337,15 @@ def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> N
     # Apply cumulative score and average calculations
     df_transformed = add_cumulative_scores(df)
     logger.debug("Cumulative scores and averages applied.")
+
+    # Add 'Year' column and convert to pandas nullable integer type
+    df_transformed['Year'] = pd.to_datetime(
+        df_transformed['Date'], dayfirst=True, errors='coerce'
+    ).dt.year.astype('Int64')
     
-
-    # Add Year column
-    df_transformed['Year'] = pd.to_datetime(df_transformed['Date'], format='%d/%m/%Y').dt.year
-
     # Save the transformed dataframe to a Parquet file
     save_to_parquet(df_transformed, parquet_file)
-    
+
     # Save the transformed dataframe to a CSV file for manual review
     df_transformed.to_csv(csv_output_file, index=False)
     logger.info(f"Transformed data saved to {csv_output_file}")
@@ -309,7 +354,6 @@ def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> N
 def check_for_complete_and_duplicate_data(all_scores_path: str, all_data_path: str) -> Dict[str, pd.DataFrame]:
     """
     Check for complete and duplicate data in the all-scores (CSV) and all-data (Parquet) files.
-    Each unique combination of TEG, Round, and Player (Pl) should have exactly 18 entries.
 
     Parameters:
         all_scores_path (str): Path to the all-scores CSV file.
@@ -319,24 +363,24 @@ def check_for_complete_and_duplicate_data(all_scores_path: str, all_data_path: s
         Dict[str, pd.DataFrame]: Summary of incomplete and duplicate data.
     """
     logger.info("Checking for complete and duplicate data.")
-    
+
     # Load the all-scores CSV file and the all-data Parquet file
     all_scores_df = pd.read_csv(all_scores_path)
     all_data_df = pd.read_parquet(all_data_path)
     logger.debug("All-scores and all-data files loaded.")
-    
+
     # Group by TEG, Round, and Player and count the number of entries
     all_scores_count = all_scores_df.groupby(['TEGNum', 'Round', 'Pl']).size().reset_index(name='EntryCount')
     all_data_count = all_data_df.groupby(['TEGNum', 'Round', 'Pl']).size().reset_index(name='EntryCount')
-    
+
     # Check for incomplete and duplicate data in all-scores.csv
-    incomplete_scores = all_scores_count[all_scores_count['EntryCount'] < 18]
-    duplicate_scores = all_scores_count[all_scores_count['EntryCount'] > 18]
-    
+    incomplete_scores = all_scores_count[all_scores_count['EntryCount'] < TOTAL_HOLES]
+    duplicate_scores = all_scores_count[all_scores_count['EntryCount'] > TOTAL_HOLES]
+
     # Check for incomplete and duplicate data in all-data.parquet
-    incomplete_data = all_data_count[all_data_count['EntryCount'] < 18]
-    duplicate_data = all_data_count[all_data_count['EntryCount'] > 18]
-    
+    incomplete_data = all_data_count[all_data_count['EntryCount'] < TOTAL_HOLES]
+    duplicate_data = all_data_count[all_data_count['EntryCount'] > TOTAL_HOLES]
+
     # Summarize the results
     summary: Dict[str, Any] = {
         'incomplete_scores': incomplete_scores,
@@ -344,132 +388,158 @@ def check_for_complete_and_duplicate_data(all_scores_path: str, all_data_path: s
         'incomplete_data': incomplete_data,
         'duplicate_data': duplicate_data
     }
-    
+
     # Log the summary
     if not incomplete_scores.empty:
         logger.warning("Incomplete data found in all-scores.csv.")
     else:
         logger.info("No incomplete data found in all-scores.csv.")
-    
+
     if not duplicate_scores.empty:
         logger.warning("Duplicate data found in all-scores.csv.")
     else:
         logger.info("No duplicate data found in all-scores.csv.")
-    
+
     if not incomplete_data.empty:
         logger.warning("Incomplete data found in all-data.parquet.")
     else:
         logger.info("No incomplete data found in all-data.parquet.")
-    
+
     if not duplicate_data.empty:
         logger.warning("Duplicate data found in all-data.parquet.")
     else:
         logger.info("No duplicate data found in all-data.parquet.")
-    
+
     return summary
 
-# utilities.py
 
-# Mapping of TEGs to their total number of rounds
-TEG_ROUNDS = {
-    'TEG 1': 4,
-    'TEG 2': 3,
-    # Add more TEGs if necessary
-}
-
-def get_teg_rounds(TEG):
+def get_teg_rounds(TEG: str) -> int:
     """
-    Function to return the number of rounds for a given TEG.
+    Return the number of rounds for a given TEG.
     If the TEG is not found in the dictionary, return 4 as the default value.
-    
-    Args:
-    TEG (str): The TEG identifier (e.g., 'TEG 1', 'TEG 2', etc.)
-    
+
+    Parameters:
+        TEG (str): The TEG identifier (e.g., 'TEG 1', 'TEG 2', etc.)
+
     Returns:
-    int: The total number of rounds for the given TEG, defaulting to 4 if not found.
+        int: The total number of rounds for the given TEG, defaulting to 4 if not found.
     """
     return TEG_ROUNDS.get(TEG, 4)
 
-# Generalized aggregation function with dynamic level of aggregation
-def aggregate_data(data, aggregation_level, measures=['Sc', 'GrossVP', 'NetVP', 'Stableford']):
-    levels = {
-        'Pl': ['Pl', 'Player'],
-        'TEG': ['Pl', 'TEG', 'Player', 'TEGNum'],
-        'Round': ['Pl', 'TEG', 'Round', 'Player', 'TEGNum','Course'],
-        'FrontBack': ['Pl', 'TEG', 'Round', 'FrontBack', 'Player', 'TEGNum','Course']
-    }
-    
-    if aggregation_level not in levels:
-        raise ValueError(f"Invalid aggregation level: {aggregation_level}. Choose from: {list(levels.keys())}")
-    
-    group_columns = levels[aggregation_level]
-    return data.groupby(group_columns, as_index=False)[measures].sum().sort_values(by=group_columns)
 
-def format_vs_par(value):
+def format_vs_par(value: float) -> str:
+    """
+    Format the value against par.
+
+    Parameters:
+        value (float): The value to format.
+
+    Returns:
+        str: Formatted string.
+    """
+    value = int(value)
     if value > 0:
-        return f"+{int(value)}"
+        return f"+{value}"
     elif value < 0:
-        return f"{int(value)}"
+        return f"{value}"
     else:
         return "="
 
 
-def get_teg_winners(df):
+def get_teg_winners(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Function to generate TEG winners, best net, gross, and worst net by TEG.
+    Generate TEG winners, best net, gross, and worst net by TEG.
+
+    Parameters:
+        df (pd.DataFrame): DataFrame containing the golf data.
+
+    Returns:
+        pd.DataFrame: DataFrame summarizing TEG winners.
     """
+    logger.info("Calculating TEG winners.")
+
     # Group by 'TEGNum' and 'Player', and calculate the sum for each player in each TEG
     grouped = df.groupby(['TEGNum', 'Player']).agg({
         'GrossVP': 'sum',
         'Stableford': 'sum'
-    }).sort_values(by="TEGNum").reset_index()
+    }).reset_index()
 
-    # Initialize a list to store the results for each TEG
     results = []
 
-    # Get unique TEG values
-    for teg in df['TEGNum'].unique():
-        # Filter for the current TEG
-        teg_data = grouped[grouped['TEGNum'] == teg]
-        
-        # Get the player with the lowest sum of GrossVP
-        lowest_grossvp = teg_data.loc[teg_data['GrossVP'].idxmin()]
-        
-        # Get the player with the highest sum of Stableford
-        highest_stableford = teg_data.loc[teg_data['Stableford'].idxmax()]
-        
-        # Get the player with the lowest sum of Stableford
-        lowest_stableford = teg_data.loc[teg_data['Stableford'].idxmin()]
-        
-        # Append the result for this TEG
+    # Get unique TEG numbers
+    for teg_num in df['TEGNum'].unique():
+        # Filter data for the current TEG
+        teg_data = grouped[grouped['TEGNum'] == teg_num]
+
+        # Identify the best gross, best net, and worst net players
+        best_gross_player = teg_data.loc[teg_data['GrossVP'].idxmin(), 'Player']
+        best_net_player = teg_data.loc[teg_data['Stableford'].idxmax(), 'Player']
+        worst_net_player = teg_data.loc[teg_data['Stableford'].idxmin(), 'Player']
+
+        # Apply manual overrides if any
+        teg_label = f"TEG {teg_num}"
+        overrides = TEG_OVERRIDES.get(teg_label, {})
+        best_gross_player = overrides.get('Best Gross', best_gross_player)
+        best_net_player = overrides.get('Best Net', best_net_player)
+        worst_net_player = overrides.get('Worst Net', worst_net_player)
+
+        # Append the results
         results.append({
-            'TEGNum': teg,
-            'TEG': "TEG " + str(teg),
-            'Best Gross': lowest_grossvp['Player'],
-            'Best Net': highest_stableford['Player'],
-            'Worst Net': lowest_stableford['Player'],
+            'TEGNum': teg_num,
+            'TEG': teg_label,
+            'Best Gross': best_gross_player,
+            'Best Net': best_net_player,
+            'Worst Net': worst_net_player
         })
 
     # Convert results to a DataFrame
-    result_df = pd.DataFrame(results).sort_values(by='TEGNum').drop(columns=['TEGNum'])
-    
-    # Merge with year data from all_data
-    teg_yr = df[['TEG', 'Year']].drop_duplicates()
-    teg_yr['Year'] = teg_yr['Year'].fillna(0).astype(int).astype(str)
-    results_with_year = pd.merge(result_df, teg_yr, on='TEG', how='left')
-    
-    # Reorder and select relevant columns
-    results_with_year = results_with_year[['TEG', 'Year', 'Best Net', 'Best Gross', 'Worst Net']]
-    
-    # Replace with correct history for specific TEG 5
-    results_with_year.loc[results_with_year['TEG'] == 'TEG 5', 'Best Net'] = 'Gregg WILLIAMS'
-    results_with_year.loc[results_with_year['TEG'] == 'TEG 5', 'Best Gross'] = 'Stuart NEUMANN*'
+    result_df = pd.DataFrame(results).sort_values(by='TEGNum')
 
-    # Rename columns for display
-    results_with_year.rename(columns={
+    # Merge with year data from df
+    teg_years = df[['TEGNum', 'Year']].drop_duplicates()
+    result_df = result_df.merge(teg_years, on='TEGNum', how='left')
+
+    # Rename columns
+    result_df.rename(columns={
         'Best Net': 'TEG Trophy',
         'Best Gross': 'Green Jacket',
-        'Worst Net': 'HMM Wooden Spoon'
+        'Worst Net': 'HMM Wooden Spoon',
+        'Year': 'Year'
     }, inplace=True)
 
-    return results_with_year
+    # Select and order columns
+    result_df = result_df[['TEG', 'Year', 'TEG Trophy', 'Green Jacket', 'HMM Wooden Spoon']]
+
+    logger.info("TEG winners calculated.")
+    return result_df
+
+def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[str] = None) -> pd.DataFrame:
+    """
+    Generalized aggregation function with dynamic level of aggregation.
+
+    Parameters:
+        data (pd.DataFrame): The DataFrame to aggregate.
+        aggregation_level (str): The level of aggregation ('Pl', 'TEG', 'Round', 'FrontBack').
+        measures (List[str], optional): List of measure columns to aggregate. Defaults to standard measures.
+
+    Returns:
+        pd.DataFrame: Aggregated DataFrame.
+    """
+    if measures is None:
+        measures = ['Sc', 'GrossVP', 'NetVP', 'Stableford']
+
+    levels = {
+        'Pl': ['Pl', 'Player'],
+        'TEG': ['Pl', 'TEG', 'Player', 'TEGNum'],
+        'Round': ['Pl', 'TEG', 'Round', 'Player', 'TEGNum', 'Course'],
+        'FrontBack': ['Pl', 'TEG', 'Round', 'FrontBack', 'Player', 'TEGNum', 'Course']
+    }
+
+    if aggregation_level not in levels:
+        raise ValueError(f"Invalid aggregation level: '{aggregation_level}'. Choose from: {list(levels.keys())}")
+
+    group_columns = levels[aggregation_level]
+    aggregated_df = data.groupby(group_columns, as_index=False)[measures].sum()
+    aggregated_df = aggregated_df.sort_values(by=group_columns)
+
+    return aggregated_df
