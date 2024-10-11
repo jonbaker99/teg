@@ -43,18 +43,59 @@ TEG_OVERRIDES = {
 }
 
 
-def load_all_data() -> pd.DataFrame:
+def load_all_data(exclude_teg_50: bool = False, exclude_incomplete_tegs: bool = False) -> pd.DataFrame:
     """
-    Load the main dataset from the specified file path.
-
+    Load the main dataset from the specified file path with optional filters.
+    
+    Parameters:
+        exclude_teg_50 (bool): If True, excludes data with TEG 50.
+        exclude_incomplete_tegs (bool): If True, excludes TEGs with incomplete rounds.
+    
     Returns:
-        pd.DataFrame: The main dataset.
+        pd.DataFrame: The filtered dataset.
     """
     df = pd.read_parquet(FILE_PATH_ALL_DATA)
+    
     # Ensure 'Year' is of integer type
     df['Year'] = df['Year'].astype('Int64')
+    
+    # Exclude TEG 50 if the flag is set
+    if exclude_teg_50:
+        df = df[df['TEGNum'] != 50]
+    
+    # Exclude incomplete TEGs if the flag is set
+    if exclude_incomplete_tegs:
+        df = exclude_incomplete_tegs_function(df)
+    
     return df
 
+
+def exclude_incomplete_tegs_function(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Exclude TEGs with incomplete rounds based on the number of unique rounds in the data.
+    
+    Parameters:
+        df (pd.DataFrame): The dataset to filter.
+    
+    Returns:
+        pd.DataFrame: The dataset with incomplete TEGs excluded.
+    """
+    # Compute the number of unique rounds per TEGNum
+    observed_rounds = df.groupby('TEGNum')['Round'].nunique()
+    
+    # Create a DataFrame with TEGNum and observed rounds
+    teg_rounds = observed_rounds.reset_index(name='ObservedRounds')
+    
+    # Apply get_teg_rounds to get the expected number of rounds per TEGNum
+    teg_rounds['ExpectedRounds'] = teg_rounds['TEGNum'].apply(get_teg_rounds)
+    
+    # Identify incomplete TEGs where observed rounds do not match expected rounds
+    incomplete_tegs = teg_rounds[teg_rounds['ObservedRounds'] != teg_rounds['ExpectedRounds']]['TEGNum']
+    
+    # Exclude the incomplete TEGs from the dataset
+    df_filtered = df[~df['TEGNum'].isin(incomplete_tegs)]
+    
+    return df_filtered
 
 def get_player_name(initials: str) -> str:
     """
@@ -342,7 +383,7 @@ def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> N
     df_transformed['Year'] = pd.to_datetime(
         df_transformed['Date'], dayfirst=True, errors='coerce'
     ).dt.year.astype('Int64')
-    
+
     # Save the transformed dataframe to a Parquet file
     save_to_parquet(df_transformed, parquet_file)
 
@@ -513,14 +554,15 @@ def get_teg_winners(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("TEG winners calculated.")
     return result_df
 
-def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[str] = None) -> pd.DataFrame:
+def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[str] = None, additional_group_fields: List[str] = None) -> pd.DataFrame:
     """
-    Generalized aggregation function with dynamic level of aggregation.
+    Generalized aggregation function with dynamic level of aggregation and additional group fields.
 
     Parameters:
         data (pd.DataFrame): The DataFrame to aggregate.
         aggregation_level (str): The level of aggregation ('Pl', 'TEG', 'Round', 'FrontBack').
         measures (List[str], optional): List of measure columns to aggregate. Defaults to standard measures.
+        additional_group_fields (List[str], optional): Additional fields to include in the grouping. Defaults to None.
 
     Returns:
         pd.DataFrame: Aggregated DataFrame.
@@ -539,6 +581,21 @@ def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[st
         raise ValueError(f"Invalid aggregation level: '{aggregation_level}'. Choose from: {list(levels.keys())}")
 
     group_columns = levels[aggregation_level]
+    
+    # Add additional group fields if provided
+    if additional_group_fields:
+        group_columns.extend(additional_group_fields)
+
+    # Debug: Print group columns and check if they exist in the DataFrame
+    print(f"Group columns: {group_columns}")
+    print(f"DataFrame columns: {data.columns.tolist()}")
+    
+    # Check if all group_columns are present in the DataFrame
+    missing_columns = [col for col in group_columns if col not in data.columns]
+    if missing_columns:
+        raise ValueError(f"Missing columns in the DataFrame: {missing_columns}")
+    
+    # Perform aggregation
     aggregated_df = data.groupby(group_columns, as_index=False)[measures].sum()
     aggregated_df = aggregated_df.sort_values(by=group_columns)
 
