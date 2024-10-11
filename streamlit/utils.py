@@ -13,6 +13,15 @@ CONFIG: Dict[str, str] = {
     "ROUND_INFO_PATH": "../data/round_info.csv"
 }
 
+FILE_PATH_ALL_DATA = '../data/all-data.parquet'
+
+
+def load_all_data():
+    """
+    Function to load the main dataset from the specified file path.
+    """
+    return pd.read_parquet(FILE_PATH_ALL_DATA)
+
 # Function to retrieve player name from initials
 def get_player_name(initials: str) -> str:
     """
@@ -285,6 +294,10 @@ def update_all_data(csv_file: str, parquet_file: str, csv_output_file: str) -> N
     df_transformed = add_cumulative_scores(df)
     logger.debug("Cumulative scores and averages applied.")
     
+
+    # Add Year column
+    df_transformed['Year'] = pd.to_datetime(df_transformed['Date'], format='%d/%m/%Y').dt.year
+
     # Save the transformed dataframe to a Parquet file
     save_to_parquet(df_transformed, parquet_file)
     
@@ -399,3 +412,64 @@ def format_vs_par(value):
         return f"{int(value)}"
     else:
         return "="
+
+
+def get_teg_winners(df):
+    """
+    Function to generate TEG winners, best net, gross, and worst net by TEG.
+    """
+    # Group by 'TEGNum' and 'Player', and calculate the sum for each player in each TEG
+    grouped = df.groupby(['TEGNum', 'Player']).agg({
+        'GrossVP': 'sum',
+        'Stableford': 'sum'
+    }).sort_values(by="TEGNum").reset_index()
+
+    # Initialize a list to store the results for each TEG
+    results = []
+
+    # Get unique TEG values
+    for teg in df['TEGNum'].unique():
+        # Filter for the current TEG
+        teg_data = grouped[grouped['TEGNum'] == teg]
+        
+        # Get the player with the lowest sum of GrossVP
+        lowest_grossvp = teg_data.loc[teg_data['GrossVP'].idxmin()]
+        
+        # Get the player with the highest sum of Stableford
+        highest_stableford = teg_data.loc[teg_data['Stableford'].idxmax()]
+        
+        # Get the player with the lowest sum of Stableford
+        lowest_stableford = teg_data.loc[teg_data['Stableford'].idxmin()]
+        
+        # Append the result for this TEG
+        results.append({
+            'TEGNum': teg,
+            'TEG': "TEG " + str(teg),
+            'Best Gross': lowest_grossvp['Player'],
+            'Best Net': highest_stableford['Player'],
+            'Worst Net': lowest_stableford['Player'],
+        })
+
+    # Convert results to a DataFrame
+    result_df = pd.DataFrame(results).sort_values(by='TEGNum').drop(columns=['TEGNum'])
+    
+    # Merge with year data from all_data
+    teg_yr = df[['TEG', 'Year']].drop_duplicates()
+    teg_yr['Year'] = teg_yr['Year'].fillna(0).astype(int).astype(str)
+    results_with_year = pd.merge(result_df, teg_yr, on='TEG', how='left')
+    
+    # Reorder and select relevant columns
+    results_with_year = results_with_year[['TEG', 'Year', 'Best Net', 'Best Gross', 'Worst Net']]
+    
+    # Replace with correct history for specific TEG 5
+    results_with_year.loc[results_with_year['TEG'] == 'TEG 5', 'Best Net'] = 'Gregg WILLIAMS'
+    results_with_year.loc[results_with_year['TEG'] == 'TEG 5', 'Best Gross'] = 'Stuart NEUMANN*'
+
+    # Rename columns for display
+    results_with_year.rename(columns={
+        'Best Net': 'TEG Trophy',
+        'Best Gross': 'Green Jacket',
+        'Worst Net': 'HMM Wooden Spoon'
+    }, inplace=True)
+
+    return results_with_year
