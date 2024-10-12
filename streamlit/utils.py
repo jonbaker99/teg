@@ -554,6 +554,9 @@ def get_teg_winners(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("TEG winners calculated.")
     return result_df
 
+from typing import List
+import pandas as pd
+
 def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[str] = None, additional_group_fields: List[str] = None) -> pd.DataFrame:
     """
     Generalized aggregation function with dynamic level of aggregation and additional group fields.
@@ -572,9 +575,9 @@ def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[st
 
     levels = {
         'Pl': ['Pl', 'Player'],
-        'TEG': ['Pl', 'TEG', 'Player', 'TEGNum'],
-        'Round': ['Pl', 'TEG', 'Round', 'Player', 'TEGNum', 'Course'],
-        'FrontBack': ['Pl', 'TEG', 'Round', 'FrontBack', 'Player', 'TEGNum', 'Course']
+        'TEG': ['Pl', 'TEG', 'Player', 'TEGNum','Year'],
+        'Round': ['Pl', 'TEG', 'Round', 'Player', 'TEGNum', 'Course', 'Date'],
+        'FrontBack': ['Pl', 'TEG', 'Round', 'FrontBack', 'Player', 'TEGNum', 'Course', 'Date']
     }
 
     if aggregation_level not in levels:
@@ -582,8 +585,10 @@ def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[st
 
     group_columns = levels[aggregation_level]
     
-    # Add additional group fields if provided
+    # Add additional group fields if provided and ensure it's a list
     if additional_group_fields:
+        if isinstance(additional_group_fields, str):
+            additional_group_fields = [additional_group_fields]  # Wrap in a list if it's a string
         group_columns.extend(additional_group_fields)
 
     # Debug: Print group columns and check if they exist in the DataFrame
@@ -600,3 +605,4 @@ def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[st
     aggregated_df = aggregated_df.sort_values(by=group_columns)
 
     return aggregated_df
+

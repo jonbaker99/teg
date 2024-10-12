@@ -3,6 +3,8 @@ import pandas as pd
 
 # Third-Party Imports
 import streamlit as st
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import GridUpdateMode
 
 # Local Imports
 from utils import aggregate_data, format_vs_par, load_all_data
@@ -38,7 +40,7 @@ FIELD_PROPERTIES = {
 }
 
 # Set the title of the app
-st.title("TEG Records")
+st.title("Best Rounds")
 
 # Sidebar for user input
 st.sidebar.header("Settings")
@@ -139,9 +141,21 @@ def combine_teg_and_round(df):
         pd.DataFrame: The modified DataFrame with combined 'Round' column.
     """
     df = df.copy()
-    df['Round'] = df['TEG'] + ' Round ' + df['Round'].astype(str)
+    df['Round'] = df['TEG'] + ' | Round ' + df['Round'].astype(str)
     df.drop(columns=['TEG'], inplace=True)
     return df
+
+def display_custom_aligned_df(df, title):
+    """
+    Display DataFrame as an HTML table with custom alignment.
+
+    Parameters:
+        df (pd.DataFrame): The DataFrame to display.
+        title (str): The title for the DataFrame section.
+    """
+    st.subheader(title)
+    aligned_df = custom_align_data(df)
+    st.write(aligned_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 def custom_align_data(df):
     """
@@ -163,23 +177,8 @@ def custom_align_data(df):
             aligned_df[col] = aligned_df[col].apply(lambda x: f"<div style='text-align: center;'>{x}</div>")
     return aligned_df
 
-def display_custom_aligned_df(df, title):
-    """
-    Display DataFrame as an HTML table with custom alignment.
-
-    Parameters:
-        df (pd.DataFrame): The DataFrame to display.
-        title (str): The title for the DataFrame section.
-    """
-    #st.subheader(title)
-    aligned_df = custom_align_data(df)
-    st.write(aligned_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-# Load data with a loading spinner
-with st.spinner('Loading data...'):
-    all_data = load_data()
-
-rd_fields = ['Player', 'TEG', 'Round', 'Course']
+# Load data
+all_data = load_data()
 
 # Define metrics to display
 fields_metrics = {
@@ -192,43 +191,13 @@ fields_metrics = {
 # Find best rows for each category
 results = {}
 for title, field in fields_metrics.items():
-    best_rows = find_best_rows(all_data, 'Round', rd_fields.copy(), field, n_keep)
+    best_rows = find_best_rows(all_data, 'Round', RD_FIELDS.copy(), field, n_keep)
     if not best_rows.empty:
         combined_df = combine_teg_and_round(best_rows)
         results[title] = combined_df
 
-# Define Tabs
-tab_labels = ["Gross vs Par", "Stableford", "Gross Score", "Net vs Par"]
-tabs = st.tabs(tab_labels)
-
-# Mapping between tab names and their corresponding titles in results
-tab_to_title = {
-    "Gross vs Par": "Best Gross",
-    "Stableford": "Best Stableford",
-    "Gross Score": "Best SC",
-    "Net vs Par": "Best Net"
-}
-
-# Iterate through tabs and display content
-for tab_label, tab in zip(tab_labels, tabs):
-    with tab:
-
-        st.subheader(f"Best {tab_label}")
-        #st.markdown("---")  # Separator
-
-
-        # Display TEG Record Placeholder
-        st.markdown("**BEST TEGS**")
-        st.write("TEG Record - Coming Soon")
-        
-        # st.markdown("---")  # Separator
-        
-        # Display Round Record
-        round_title = tab_to_title.get(tab_label)
-        if round_title and round_title in results:
-            st.markdown("**BEST ROUNDS**")
-            display_custom_aligned_df(results[round_title], round_title)
-        else:
-            st.write("No data available for this section.")
-        
-        st.markdown("---")  # Separator between sections if needed
+# Display DataFrames
+for i, (title, df) in enumerate(results.items()):
+    display_custom_aligned_df(df, title)
+    if i < len(results) - 1:
+        st.markdown("---")

@@ -15,6 +15,57 @@ st.title("Best Rounds")
 st.sidebar.header("Settings")
 n_keep = st.sidebar.number_input("Number of Rows to Keep", min_value=1, max_value=100, value=10, step=1)
 
+
+#=========== TESTING WAYS TO REMOVE INDEX
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+
+# Create a sample DataFrame
+df = pd.DataFrame({
+    'A': np.random.rand(5),
+    'B': np.random.rand(5),
+    'C': np.random.rand(5)
+})
+
+st.title("DataFrame Display Test")
+
+st.header("1. Using st.dataframe()")
+st.dataframe(df.reset_index(drop=True), hide_index=True)
+
+st.header("2. Using st.table()")
+st.table(df.reset_index(drop=True).assign(hack='').set_index('hack'))
+
+st.header("3. Using st.write() with to_html()")
+st.write(df.to_html(index=False), unsafe_allow_html=True)
+
+
+#=END===== TESTING WAYS TO REMOVE INDEX
+
+
+#========== TESTING FORMATTING
+
+from temp_utils_table_format import style_dataframe_core_styler
+
+df = pd.DataFrame({
+    'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eve'],
+    'Date': pd.date_range(start='2023-01-01', periods=5),
+    'Score': [95.5, 82.3, 88.7, 90.1, 79.8],
+    'Grade': ['A', 'B', 'B+', 'A-', 'C+'],
+    'Pass': [True, True, True, True, False],
+    'Department': ['HR', 'IT', 'Finance', 'Marketing', 'Operations']
+})
+
+#style_dataframe(df)
+
+style_dataframe_core_styler(df)
+
+
+# END=========================
+
+
+
 @st.cache_data
 def load_data():
     # Load the data from the Parquet file & exclude TEG 2 and 50
