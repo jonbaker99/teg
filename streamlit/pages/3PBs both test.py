@@ -4,7 +4,8 @@ import streamlit as st
 import pandas as pd
 import os
 
-from utils import load_all_data, aggregate_data
+#from utils import load_all_data, aggregate_data
+from utils import get_complete_teg_data, get_round_data
 
 # ---------------------------#
 #       Helper Functions     #
@@ -86,7 +87,7 @@ def display_metric(df, metric_name, column, group_by=['Player'], aggregation='be
     except Exception as e:
         st.error(f"An unexpected error occurred while processing {metric_name}: {e}")
 
-def show_teg_metrics(all_data):
+def show_teg_metrics():
     """
     Displays the TEG-level best and worst metrics.
 
@@ -97,18 +98,19 @@ def show_teg_metrics(all_data):
 
     try:
         # Aggregate data at TEG level
-        teg_data = aggregate_data(data=all_data, aggregation_level='TEG')
+        #teg_data = aggregate_data(data=all_data, aggregation_level='TEG')
+        teg_data = get_complete_teg_data()
 
         # Find unique combinations of TEG and Year
-        if 'Year' in all_data.columns:
-            unique_teg_year = all_data[['TEG', 'Year']].drop_duplicates()
-        else:
-            st.warning("'Year' column not found in data.")
-            unique_teg_year = pd.DataFrame({'TEG': teg_data['TEG'].unique()})
+        # if 'Year' in all_data.columns:
+        #     unique_teg_year = all_data[['TEG', 'Year']].drop_duplicates()
+        # else:
+        #     st.warning("'Year' column not found in data.")
+        #     unique_teg_year = pd.DataFrame({'TEG': teg_data['TEG'].unique()})
 
         # Merge teg_data with unique_teg_year to add Year column
         #df_merged = pd.merge(teg_data, unique_teg_year, on='TEG', how='left')
-        df_merged = teg_data.copy()
+        df_merged = teg_data
 
         # Define metrics and their corresponding columns
         metrics = {
@@ -137,7 +139,7 @@ def show_teg_metrics(all_data):
     except Exception as e:
         st.error(f"An unexpected error occurred in TEG Metrics: {e}")
 
-def show_round_metrics(all_data):
+def show_round_metrics():
     """
     Displays the Round-level best and worst metrics.
 
@@ -148,26 +150,27 @@ def show_round_metrics(all_data):
 
     try:
         # Aggregate data at Round level
-        round_data = aggregate_data(data=all_data, aggregation_level='Round')
+        #round_data = aggregate_data(data=all_data, aggregation_level='Round')
+        round_data = get_round_data()
 
         # Load additional round information
         # Reverting the path to '../data/round_info.csv' as per user request
         #current_dir = os.path.dirname(os.path.abspath(__file__))
-        round_info_path = '../data/round_info.csv'
-        if not os.path.exists(round_info_path):
-            st.error(f"round_info.csv not found at path: {round_info_path}")
-            return
+        # round_info_path = '../data/round_info.csv'
+        # if not os.path.exists(round_info_path):
+        #     st.error(f"round_info.csv not found at path: {round_info_path}")
+        #     return
 
-        round_info = pd.read_csv(round_info_path)
+        # round_info = pd.read_csv(round_info_path)
 
         # Drop 'Course' and 'Date' from round_data if they exist to avoid conflicts
-        for col in ['Course', 'Date']:
-            if col in round_data.columns:
-                round_data = round_data.drop(columns=[col])
+        # for col in ['Course', 'Date']:
+        #     if col in round_data.columns:
+        #         round_data = round_data.drop(columns=[col])
 
         # Merge round_data with round_info to add 'Course' and 'Date'
-        df_merged = pd.merge(round_data, round_info[['TEG', 'Round', 'Course', 'Date']], on=['TEG', 'Round'], how='left')
-
+        # df_merged = pd.merge(round_data, round_info[['TEG', 'Round', 'Course', 'Date']], on=['TEG', 'Round'], how='left')
+        df_merged = round_data
         # Define metrics and their corresponding columns
         metrics = {
             'Gross': 'GrossVP',
@@ -218,19 +221,19 @@ def show_about():
 #        Caching Data        #
 # ---------------------------#
 
-@st.cache_data
-def load_and_prepare_data(exclude_incomplete_tegs=True):
-    """
-    Loads and prepares the data for analysis.
+# @st.cache_data
+# def load_and_prepare_data(exclude_incomplete_tegs=True):
+#     """
+#     Loads and prepares the data for analysis.
 
-    Parameters:
-    - exclude_incomplete_tegs (bool): Whether to exclude incomplete TEGs.
+#     Parameters:
+#     - exclude_incomplete_tegs (bool): Whether to exclude incomplete TEGs.
 
-    Returns:
-    - pd.DataFrame: The loaded and cleaned data.
-    """
-    all_data = load_all_data(exclude_incomplete_tegs=exclude_incomplete_tegs)
-    return all_data
+#     Returns:
+#     - pd.DataFrame: The loaded and cleaned data.
+#     """
+#     all_data = load_all_data(exclude_incomplete_tegs=exclude_incomplete_tegs)
+#     return all_data
 
 # ---------------------------#
 #            Main            #
@@ -240,28 +243,28 @@ def main():
     st.title("Personal Bests (& Worsts)")
 
     # Create tabs for the interface
-    tab1, tab2, tab3 = st.tabs(["By TEG", "By Round", "About"])
+    tab1, tab2 = st.tabs(["By TEG", "By Round"])
 
     # Load all data once to avoid redundancy with caching
-    with st.spinner("Loading data..."):
-        all_data = load_and_prepare_data()
+    # with st.spinner("Loading data..."):
+    #     all_data = load_and_prepare_data()
 
-    if all_data.empty:
-        st.error("No data available to display. Please check your data sources.")
-        return
+    # if all_data.empty:
+    #     st.error("No data available to display. Please check your data sources.")
+    #     return
 
     with tab1:
-        show_teg_metrics(all_data)
+        show_teg_metrics()
 
     with tab2:
-        show_round_metrics(all_data)
+        show_round_metrics()
 
-    with tab3:
-        show_about()
+    # with tab3:
+    #     show_about()
 
     # Add a footer or additional information
-    st.markdown("---")
-    st.markdown("© 2024 Your Company Name. All rights reserved.")
+    # st.markdown("---")
+    # st.markdown("© 2024 Your Company Name. All rights reserved.")
 
 if __name__ == "__main__":
     main()

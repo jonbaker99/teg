@@ -563,46 +563,109 @@ def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[st
 
     Parameters:
         data (pd.DataFrame): The DataFrame to aggregate.
-        aggregation_level (str): The level of aggregation ('Pl', 'TEG', 'Round', 'FrontBack').
+        aggregation_level (str): The level of aggregation ('Player', 'TEG', 'Round', 'FrontBack', 'Hole').
         measures (List[str], optional): List of measure columns to aggregate. Defaults to standard measures.
         additional_group_fields (List[str], optional): Additional fields to include in the grouping. Defaults to None.
 
     Returns:
         pd.DataFrame: Aggregated DataFrame.
     """
+    # Set default measures if none provided
     if measures is None:
         measures = ['Sc', 'GrossVP', 'NetVP', 'Stableford']
 
-    levels = {
-        'Pl': ['Pl', 'Player'],
-        'TEG': ['Pl', 'TEG', 'Player', 'TEGNum','Year'],
-        'Round': ['Pl', 'TEG', 'Round', 'Player', 'TEGNum', 'Course', 'Date'],
-        'FrontBack': ['Pl', 'TEG', 'Round', 'FrontBack', 'Player', 'TEGNum', 'Course', 'Date']
-    }
+    # Get the fields related to each aggregation level
+    fields_by_level = list_fields_by_aggregation_level(data)
 
-    if aggregation_level not in levels:
-        raise ValueError(f"Invalid aggregation level: '{aggregation_level}'. Choose from: {list(levels.keys())}")
+    # Define the hierarchy of aggregation levels
+    aggregation_hierarchy = ['Player', 'TEG', 'Round', 'FrontBack', 'Hole']
 
-    group_columns = levels[aggregation_level]
-    
-    # Add additional group fields if provided and ensure it's a list
+    if aggregation_level not in aggregation_hierarchy:
+        raise ValueError(f"Invalid aggregation level: '{aggregation_level}'. Choose from: {aggregation_hierarchy}")
+
+    # Determine which fields to include based on the selected aggregation level
+    idx = aggregation_hierarchy.index(aggregation_level)
+    group_columns = []
+
+    # Add all fields from the selected aggregation level and higher levels
+    for level in aggregation_hierarchy[:idx + 1]:
+        group_columns.extend(fields_by_level[level])
+
+    # Add additional group fields if provided
     if additional_group_fields:
         if isinstance(additional_group_fields, str):
             additional_group_fields = [additional_group_fields]  # Wrap in a list if it's a string
         group_columns.extend(additional_group_fields)
 
+    # Ensure group columns are unique
+    group_columns = list(set(group_columns))
+
     # Debug: Print group columns and check if they exist in the DataFrame
     print(f"Group columns: {group_columns}")
     print(f"DataFrame columns: {data.columns.tolist()}")
-    
+
     # Check if all group_columns are present in the DataFrame
     missing_columns = [col for col in group_columns if col not in data.columns]
     if missing_columns:
         raise ValueError(f"Missing columns in the DataFrame: {missing_columns}")
-    
+
     # Perform aggregation
     aggregated_df = data.groupby(group_columns, as_index=False)[measures].sum()
     aggregated_df = aggregated_df.sort_values(by=group_columns)
 
     return aggregated_df
+
+
+def get_complete_teg_data():
+    all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= True)
+    aggregated_data = aggregate_data(all_data,'TEG')
+    return aggregated_data
+
+def get_teg_data_inc_in_progress():
+    all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= False)
+    aggregated_data = aggregate_data(all_data,'TEG')
+    return aggregated_data
+
+def get_round_data():
+    all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= False)
+    aggregated_data = aggregate_data(all_data,'Round')
+    return aggregated_data
+
+def get_9_data():
+    all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= False)
+    aggregated_data = aggregate_data(all_data,'FrontBack')
+    return aggregated_data    
+
+def get_Pl_data():
+    all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= False)
+    aggregated_data = aggregate_data(all_data,'Player')
+    return aggregated_data
+
+def list_fields_by_aggregation_level(df):
+    # Define the levels of aggregation
+    aggregation_levels = {
+        'Player': ['Player'],
+        'TEG': ['Player', 'TEG'],
+        'Round': ['Player', 'TEG', 'Round'],
+        'FrontBack': ['Player', 'TEG', 'Round', 'FrontBack'],
+        #'Hole': ['Player', 'TEG', 'Round', 'FrontBack', 'Hole']
+    }
+
+    # Dictionary to hold fields unique at each level
+    fields_by_level = {level: [] for level in aggregation_levels}
+
+    # For each field in the dataframe, determine its uniqueness level
+    for col in df.columns:
+        for level, group_fields in aggregation_levels.items():
+            # Check if the field is unique at this level
+            if df.groupby(group_fields)[col].nunique().max() == 1:
+                fields_by_level[level].append(col)
+                break  # Stop after finding the lowest level of uniqueness
+
+    return fields_by_level
+
+# Example usage
+# fields_by_level = list_fields_by_aggregation_level(all_data)
+# for level, fields in fields_by_level.items():
+#     print(f"Fields unique at {level} level: {fields}")
 

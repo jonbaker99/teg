@@ -35,27 +35,8 @@ current_handicaps_formatted['Change'] = current_handicaps_formatted['Change'].ap
 tab1, tab2 = st.tabs(["TEG 17 Handicaps", "Handicap History"])
 
 with tab1:
-    st.write(current_handicaps_formatted.to_html(index=False, justify='left'), unsafe_allow_html=True)
-
-    '---'
-
-    # st.write(current_handicaps)
-
-    # # Create a container for metrics
-    # metric_container = st.container()
-
-    # with metric_container:
-        
-    #     # Create six columns
-    #     col1,col2,col3,col4,col5,col6 = st.columns(6)
-
-    #     with col1:
-    #         st.metric(label='Gregg WILLIAMS',value=16,delta=0,delta_color='inverse')
-
-    #     with col2:
-    #         st.metric(label='David MULLIN',value=21,delta=1,delta_color='inverse')
-
-    # Function to insert Unicode Line Separator
+    
+       # Function to insert Unicode Line Separator
     
     
     def format_name(name):
@@ -65,7 +46,7 @@ with tab1:
 
 
     # Title
-    st.title("Golf Handicaps Summary")
+    st.header("TEG 17 Handicaps")
 
     # Create a container for custom metrics
     custom_metric_container = st.container()
@@ -91,8 +72,30 @@ with tab1:
 
 
     # Optional: Add some spacing or additional information
-    st.markdown("---")
-    st.write("**Note:** The 'Change' indicates the difference in handicap from the previous period.")
+    st.caption("Change shows difference in HC vs previous TEG")
+    
+    #'---'
+    #st.write(current_handicaps_formatted.to_html(index=False, justify='left'), unsafe_allow_html=True)
+
+   
+
+    # st.write(current_handicaps)
+
+    # # Create a container for metrics
+    # metric_container = st.container()
+
+    # with metric_container:
+        
+    #     # Create six columns
+    #     col1,col2,col3,col4,col5,col6 = st.columns(6)
+
+    #     with col1:
+    #         st.metric(label='Gregg WILLIAMS',value=16,delta=0,delta_color='inverse')
+
+    #     with col2:
+    #         st.metric(label='David MULLIN',value=21,delta=1,delta_color='inverse')
+
+ 
 
 
 
@@ -100,7 +103,7 @@ with tab1:
 with tab2:
     try:
         historic_handicaps = pd.read_csv("../data/handicaps.csv")
-        
+        historic_handicaps = historic_handicaps[historic_handicaps['TEG']!='TEG 50']
         # Apply formatting to all columns except the first one (assuming the first column is names or dates)
         for col in historic_handicaps.columns[1:]:
             historic_handicaps[col] = historic_handicaps[col].apply(format_value)
