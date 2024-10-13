@@ -794,3 +794,62 @@ def get_best(df, measure_to_use, player_level = False, top_n = 1):
 
     #measure_fn
     return df[df[measure_fn] == top_n]
+
+def ordinal(n):
+    if 11 <= (n % 100) <= 13:
+        suffix = 'th'
+    else:
+        suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
+    return str(n) + suffix
+
+def safe_ordinal(n):
+    if pd.isna(n):
+        return n  # or return a specific string like 'N/A'
+    try:
+        return ordinal(int(n))
+    except ValueError:
+        return str(n)  # or return a specific string for invalid inputs
+
+def chosen_rd_context(ranked_rd_df, teg = 'TEG 15',rd = 4, measure = None):
+    #@st.cache_data
+    df = ranked_rd_df
+    all_cnt = len(df)
+    df['Pl_count'] = df.groupby('Pl')['Pl'].transform('count')
+    chosen_rd = df[(df['TEG']==teg) & (df['Round'] == rd)]
+
+    sort_ascending = measure != 'Stableford'
+    chosen_rd = chosen_rd.sort_values(measure, ascending=sort_ascending)
+    # chosen_rd['Pl rank'] = chosen_rd['Rank_within_player_' + measure].apply(safe_ordinal)
+    # chosen_rd['All time rank'] = chosen_rd['Rank_within_all_' + measure].apply(safe_ordinal)
+    #chosen_rd['Pl rank'] = f'{chosen_rd['Rank_within_player_' + measure].astype(int)} / {chosen_rd['Pl_count']}'
+    chosen_rd['Pl rank'] = (chosen_rd['Rank_within_player_' + measure].astype(int).astype(str) + 
+                        ' / ' + 
+                        chosen_rd['Pl_count'].astype(str))
+    chosen_rd['All time rank'] = (chosen_rd['Rank_within_all_' + measure].astype(int).astype(str) + 
+                              ' / ' + 
+                              str(all_cnt))
+    chosen_rd_context = chosen_rd[['Player',measure,'Pl rank','All time rank']]
+    chosen_rd_context[measure] = chosen_rd_context[measure].astype(int)
+    return chosen_rd_context
+
+def chosen_teg_context(ranked_teg_df, teg = 'TEG 15', measure = None):
+    #@st.cache_data
+    df = ranked_teg_df
+    all_cnt = len(df)
+    df['Pl_count'] = df.groupby('Pl')['Pl'].transform('count')
+    chosen_teg = df[(df['TEG']==teg)]
+
+    sort_ascending = measure != 'Stableford'
+    chosen_teg = chosen_teg.sort_values(measure, ascending=sort_ascending)
+    # chosen_rd['Pl rank'] = chosen_rd['Rank_within_player_' + measure].apply(safe_ordinal)
+    # chosen_rd['All time rank'] = chosen_rd['Rank_within_all_' + measure].apply(safe_ordinal)
+    #chosen_rd['Pl rank'] = f'{chosen_rd['Rank_within_player_' + measure].astype(int)} / {chosen_rd['Pl_count']}'
+    chosen_teg['Pl rank'] = (chosen_teg['Rank_within_player_' + measure].astype(int).astype(str) + 
+                        ' / ' + 
+                        chosen_teg['Pl_count'].astype(str))
+    chosen_teg['All time rank'] = (chosen_teg['Rank_within_all_' + measure].astype(int).astype(str) + 
+                              ' / ' + 
+                              str(all_cnt))
+    chosen_teg_context = chosen_teg[['Player',measure,'Pl rank','All time rank']]
+    chosen_teg_context[measure] = chosen_teg_context[measure].astype(int)
+    return chosen_teg_context

@@ -1,4 +1,4 @@
-from utils import get_ranked_teg_data, get_best, get_ranked_round_data
+from utils import get_ranked_teg_data, get_best, get_ranked_round_data, get_ranked_frontback_data
 import streamlit as st
 import pandas as pd
 
@@ -47,16 +47,38 @@ def format_best_round_record(ranked_round_df, measure):
         player_info = f"| **{best_records['Player'].iloc[0]}** | {best_records['Course'].iloc[0]} | {best_records['TEG'].iloc[0]}, R{best_records['Round'].iloc[0]} | {best_records['Date'].iloc[0]}"
         return f"{header} {player_info}"
     else:
-        player_infos = [f"* **{row['Player']}** | {row['Course']} | {row['TEG']}, {row['Round']} | ({row['Date']})" for _, row in best_records.iterrows()]
+        player_infos = [f"* **{row['Player']}** | {row['Course']} | {row['TEG']}, R{row['Round']} | {row['Date']}" for _, row in best_records.iterrows()]
         return f"{header}\n" + "\n".join(player_infos)
 
 
+def format_best_frontback_record(ranked_round_df, measure):
+    # Get the best record(s)
+    best_records = get_best(ranked_round_df, measure_to_use=measure, top_n=1)
+    
+    # Format the header based on the measure
+    if measure == 'Sc':
+        header = f"Best Score: {int(best_records[measure].iloc[0])}"
+    elif measure == 'GrossVP':
+        header = f"Best Gross: {int(best_records[measure].iloc[0]):+}"
+    elif measure == 'NetVP':
+        header = f"Best Net: {int(best_records[measure].iloc[0]):+}"
+    elif measure == 'Stableford':
+        header = f"Best Stableford: {int(best_records[measure].iloc[0])}"
+    
+    # Format player info
+    if len(best_records) == 1:
+        player_info = f"| **{best_records['Player'].iloc[0]}** | {best_records['Course'].iloc[0]} | {best_records['TEG'].iloc[0]}, R{best_records['Round'].iloc[0]} {best_records['FrontBack'].iloc[0]} 9 | {best_records['Date'].iloc[0]}"
+        return f"{header} {player_info}"
+    else:
+        player_infos = [f"* **{row['Player']}** | {row['Course']} | {row['TEG']}, {row['Round']} {row['FrontBack']} 9 | ({row['Date']})" for _, row in best_records.iterrows()]
+        return f"{header}\n" + "\n".join(player_infos)
+
 measures = ['GrossVP', 'NetVP', 'Stableford']
-tegs_ranked = get_ranked_teg_data()
-rounds_ranked = get_ranked_round_data()
 
 # col1, col2, = st.columns(2)
 '---'
+
+tegs_ranked = get_ranked_teg_data()
 
 # with col1:
 st.subheader('Best TEGs')
@@ -64,8 +86,16 @@ for measure in measures:
     st.markdown(format_best_teg_record(tegs_ranked, measure))
 
 '---'
-
+rounds_ranked = get_ranked_round_data()
+measures = ['GrossVP', 'Sc', 'NetVP', 'Stableford']
 # with col2:
 st.subheader('Best Rounds')
 for measure in measures:
     st.markdown(format_best_round_record(rounds_ranked, measure))
+
+'---'
+
+frontback_ranked = get_ranked_frontback_data()
+st.subheader('Best 9s')
+for measure in measures:
+    st.markdown(format_best_frontback_record(frontback_ranked, measure))
