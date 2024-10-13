@@ -5,9 +5,13 @@ from math import floor
 from google.oauth2.service_account import Credentials
 import gspread
 from typing import Dict, Any, List
+import streamlit as st
+
+print("utils module is being imported")
 
 # Configure Logging
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 # Constants and Configurations
@@ -42,7 +46,7 @@ TEG_OVERRIDES = {
     }
 }
 
-
+@st.cache_data
 def load_all_data(exclude_teg_50: bool = False, exclude_incomplete_tegs: bool = False) -> pd.DataFrame:
     """
     Load the main dataset from the specified file path with optional filters.
@@ -601,8 +605,8 @@ def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[st
     group_columns = list(set(group_columns))
 
     # Debug: Print group columns and check if they exist in the DataFrame
-    print(f"Group columns: {group_columns}")
-    print(f"DataFrame columns: {data.columns.tolist()}")
+    #print(f"Group columns: {group_columns}")
+    #print(f"DataFrame columns: {data.columns.tolist()}")
 
     # Check if all group_columns are present in the DataFrame
     missing_columns = [col for col in group_columns if col not in data.columns]
@@ -615,27 +619,31 @@ def aggregate_data(data: pd.DataFrame, aggregation_level: str, measures: List[st
 
     return aggregated_df
 
-
+@st.cache_data
 def get_complete_teg_data():
     all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= True)
     aggregated_data = aggregate_data(all_data,'TEG')
     return aggregated_data
 
+@st.cache_data
 def get_teg_data_inc_in_progress():
     all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= False)
     aggregated_data = aggregate_data(all_data,'TEG')
     return aggregated_data
 
+@st.cache_data
 def get_round_data():
     all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= False)
     aggregated_data = aggregate_data(all_data,'Round')
     return aggregated_data
 
+@st.cache_data
 def get_9_data():
     all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= False)
     aggregated_data = aggregate_data(all_data,'FrontBack')
     return aggregated_data    
 
+@st.cache_data
 def get_Pl_data():
     all_data = load_all_data(exclude_teg_50 = True, exclude_incomplete_tegs= False)
     aggregated_data = aggregate_data(all_data,'Player')
@@ -669,3 +677,120 @@ def list_fields_by_aggregation_level(df):
 # for level, fields in fields_by_level.items():
 #     print(f"Fields unique at {level} level: {fields}")
 
+
+def add_ranks(df, fields_to_rank=None, rank_ascending=None):
+
+    """
+    Adds ranking columns to the DataFrame for optionally specified fields or all scoring fields, both within each player's rounds 
+    and across all rounds. The ranking can be done in ascending or descending order.
+    Ranking will be applied at lowest level of aggregation present in the data.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The input DataFrame containing the data. 
+        It must include at least a 'Player' column and 
+        the fields to be ranked (e.g., 'Sc', 'GrossVP', 'NetVP', 'Stableford').
+
+    fields_to_rank : list or str, optional
+        The fields to rank. This can be a list of field names (e.g., ['Sc', 'GrossVP']) or a single 
+        field name as a string (e.g., 'Sc'). If not provided, the default is ['Sc', 'GrossVP', 'NetVP', 
+        'Stableford'].
+
+    rank_ascending : bool, optional
+        The order of ranking. If not provided, the function defaults to:
+        - True for all fields except 'Stableford', where it defaults to False.
+        If provided, this will apply the same order for all fields.
+
+    Returns:
+    --------
+    pandas.DataFrame
+        A DataFrame with additional columns for the ranking of each specified field:
+        - 'Rank_within_player_<field>': The rank of the field within each player's rounds.
+        - 'Rank_within_all_<field>': The rank of the field across all rounds.
+
+    Example:
+    --------
+    >>> add_ranks_for_fields(df, fields_to_rank=['Sc', 'Stableford'], rank_ascending=True)
+    This will add rank columns for 'Sc' and 'Stableford', ranked in ascending order.
+    
+    >>> add_ranks_for_fields(df)
+    This will add rank columns for the default fields ['Sc', 'GrossVP', 'NetVP', 'Stableford'] 
+    with default ascending/descending order.
+    """
+
+    input_rank_ascending = rank_ascending
+
+    # If fields_to_rank is not provided, use default list of fields
+    if fields_to_rank is None:
+        fields_to_rank = ['Sc', 'GrossVP', 'NetVP', 'Stableford']
+    
+    # Check if fields_to_rank is a string, convert to list if necessary
+    if isinstance(fields_to_rank, str):
+        fields_to_rank = [fields_to_rank]
+    
+    for field in fields_to_rank:
+        # Determine default value for rank_ascending for each field
+        if input_rank_ascending is None:
+            rank_ascending = False if 'Stableford' in field else True
+        
+        #print(f'===================\nField: {field}\ninput_rank_asc: {input_rank_ascending}\nRank ascending:{rank_ascending}')
+
+        # Rank within each Player's scores
+        df[f'Rank_within_player_{field}'] = df.groupby('Player')[field].rank(method='min', ascending=rank_ascending)
+        
+        # Rank across all Players
+        df[f'Rank_within_all_{field}'] = df[field].rank(method='min', ascending=rank_ascending)
+    
+    return df
+
+@st.cache_data
+def get_ranked_teg_data():
+    df = get_complete_teg_data()
+    ranked_data = add_ranks(df)
+    return ranked_data
+
+@st.cache_data
+def get_ranked_round_data():
+    df = get_round_data()
+    ranked_data = add_ranks(df)
+    return ranked_data
+
+@st.cache_data
+def get_ranked_frontback_data():
+    df = get_9_data()
+    ranked_data = add_ranks(df)
+    return ranked_data
+
+def get_best(df, measure_to_use, player_level = False, top_n = 1):
+    valid_measures = ['Sc', 'GrossVP', 'NetVP', 'Stableford']
+    if measure_to_use not in valid_measures:
+        error_message = f"Invalid measure: '{measure_to_use}'. Valid options are: {', '.join(valid_measures)}"
+
+    if player_level is None:
+        player_level = False
+
+    if top_n is None:
+        top_n = 1
+    
+    measure_fn = 'Rank_within_' + ('player' if player_level else 'all') + f'_{measure_to_use}' 
+
+    #measure_fn
+    return df[df[measure_fn] == top_n]
+
+
+def get_best(df, measure_to_use, player_level = False, top_n = 1):
+    valid_measures = ['Sc', 'GrossVP', 'NetVP', 'Stableford']
+    if measure_to_use not in valid_measures:
+        error_message = f"Invalid measure: '{measure_to_use}'. Valid options are: {', '.join(valid_measures)}"
+
+    if player_level is None:
+        player_level = False
+
+    if top_n is None:
+        top_n = 1
+    
+    measure_fn = 'Rank_within_' + ('player' if player_level else 'all') + f'_{measure_to_use}' 
+
+    #measure_fn
+    return df[df[measure_fn] == top_n]
