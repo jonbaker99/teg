@@ -44,10 +44,10 @@ def format_best_round_record(ranked_round_df, measure):
     
     # Format player info
     if len(best_records) == 1:
-        player_info = f"| **{best_records['Player'].iloc[0]}** | {best_records['Course'].iloc[0]} | {best_records['TEG'].iloc[0]}, R{best_records['Round'].iloc[0]} | {best_records['Date'].iloc[0]}"
+        player_info = f"| **{best_records['Player'].iloc[0]}** | {best_records['Course'].iloc[0]} | {best_records['TEG'].iloc[0]}, R{best_records['Round'].iloc[0]} | {best_records['Year'].iloc[0]}"
         return f"{header} {player_info}"
     else:
-        player_infos = [f"* **{row['Player']}** | {row['Course']} | {row['TEG']}, R{row['Round']} | {row['Date']}" for _, row in best_records.iterrows()]
+        player_infos = [f"* **{row['Player']}** | {row['Course']} | {row['TEG']}, R{row['Round']} | {row['Year']}" for _, row in best_records.iterrows()]
         return f"{header}\n" + "\n".join(player_infos)
 
 
@@ -67,10 +67,10 @@ def format_best_frontback_record(ranked_round_df, measure):
     
     # Format player info
     if len(best_records) == 1:
-        player_info = f"| **{best_records['Player'].iloc[0]}** | {best_records['Course'].iloc[0]} | {best_records['TEG'].iloc[0]}, R{best_records['Round'].iloc[0]} {best_records['FrontBack'].iloc[0]} 9 | {best_records['Date'].iloc[0]}"
+        player_info = f"| **{best_records['Player'].iloc[0]}** | {best_records['Course'].iloc[0]} | {best_records['TEG'].iloc[0]}, R{best_records['Round'].iloc[0]} {best_records['FrontBack'].iloc[0]} 9 | {best_records['Year'].iloc[0]}"
         return f"{header} {player_info}"
     else:
-        player_infos = [f"* **{row['Player']}** | {row['Course']} | {row['TEG']}, {row['Round']} {row['FrontBack']} 9 | ({row['Date']})" for _, row in best_records.iterrows()]
+        player_infos = [f"* **{row['Player']}** | {row['Course']} | {row['TEG']}, {row['Round']} {row['FrontBack']} 9 | ({row['Year']})" for _, row in best_records.iterrows()]
         return f"{header}\n" + "\n".join(player_infos)
 
 measures = ['GrossVP', 'NetVP', 'Stableford']
