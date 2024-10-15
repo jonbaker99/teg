@@ -253,7 +253,9 @@ def get_google_sheet(sheet_name: str, worksheet_name: str, creds_path: str) -> p
     logger.info(f"Fetching data from Google Sheet: {sheet_name}, Worksheet: {worksheet_name}")
     SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     try:
-        creds = Credentials.from_service_account_file(creds_path, scopes=SCOPE)
+        api_key = st.secrets["GOOGLE_SHEETS_API_KEY"]
+        #creds = Credentials.from_service_account_file(creds_path, scopes=SCOPE)
+        creds = Credentials(None, token=api_key)
         client = gspread.authorize(creds)
         sheet = client.open(sheet_name).worksheet(worksheet_name)
         data = sheet.get_all_records()
