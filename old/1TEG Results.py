@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from typing import List, Dict, Any
 import os
+from utils import load_all_data
 
 # Constants
 FILE_PATH = '../data/all-data.parquet'
@@ -205,9 +206,11 @@ def main() -> None:
     st.markdown(get_custom_css(), unsafe_allow_html=True)
 
     try:
-        with st.spinner("Loading data..."):
-            df = load_data(FILE_PATH)
-            round_df = aggregate_to_round_level(df)
+        # with st.spinner("Loading data..."):
+        #     df = load_data(FILE_PATH)
+        #     round_df = aggregate_to_round_level(df)
+
+
 
         teg_order = round_df[['TEG', 'TEGNum']].drop_duplicates().sort_values('TEGNum')
         tegs = teg_order['TEG'].tolist()

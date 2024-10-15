@@ -27,14 +27,14 @@ def display_metric(df, metric_name, column, group_by=['Player'], aggregation='be
             selected_columns = ['Player', column, 'TEG', 'Year']
             rename_dict = {column: 'Score'}
 
-        output = metric_values[selected_columns].rename(columns=rename_dict)
+        output = metric_values[selected_columns].rename(columns=rename_dict).sort_values(by='Score', ascending=sort_ascending).reset_index(drop=True)
 
         output['Score'] = output['Score'].apply(lambda x: f"+{int(x):.0f}" if x > 0 else f"{int(x):.0f}" if column in ['GrossVP', 'NetVP'] else f"{int(x):.0f}")
 
         if 'Year' in output.columns:
             output['Year'] = output['Year'].astype(int)
 
-        output = output.sort_values(by='Score', ascending=sort_ascending).reset_index(drop=True)
+        #output = output.sort_values(by='Score', ascending=sort_ascending).reset_index(drop=True)
 
         st.subheader(display_title)
         st.write(output.to_html(index=False, justify='left'), unsafe_allow_html=True)

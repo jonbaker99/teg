@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 from typing import List, Dict, Any
 import logging
-from utils import get_teg_rounds, get_round_data, load_all_data
-from make_charts import create_cumulative_graph
+from utils import get_teg_rounds, get_round_data
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -220,7 +219,6 @@ def main() -> None:
     try:
         with st.spinner("Loading data..."):
             round_df = get_round_data()
-            all_data = load_all_data()
 
         required_columns = [PLAYER_COLUMN, 'TEGNum', 'TEG', 'Round'] + MEASURES
         missing_columns = [col for col in required_columns if col not in round_df.columns]
@@ -236,7 +234,7 @@ def main() -> None:
             st.warning("No TEGs available in the data.")
             st.stop()
 
-        chosen_teg = st.radio('Select TEG', tegs, horizontal=True)
+        chosen_teg = st.sidebar.radio('Select TEG', tegs, horizontal=True)
 
         leaderboard_df = round_df[round_df['TEG'] == chosen_teg]
 
@@ -253,43 +251,21 @@ def main() -> None:
 
         st.subheader(page_header)
 
-        tab1, tab2 = st.tabs(["TEG Trophy & Spoon", "Green Jacket"])
+        display_leaderboard(
+            leaderboard_df, 
+            'Stableford', 
+            "TEG Trophy Leaderboard (Best Stableford)",
+            leader_label, 
+            ascending=False
+        )
 
-        with tab1:
-
-            display_leaderboard(
-                leaderboard_df, 
-                'Stableford', 
-                "TEG Trophy Leaderboard (Best Stableford)",
-                leader_label, 
-                ascending=False
-            )
-
-            
-            # teg_data = all_data[all_data['TEG'] == chosen_teg]
-
-            # with st.expander("The race for the trophy..."):
-            #     fig_stableford = create_cumulative_graph(all_data, chosen_teg,  'Stableford Cum TEG', f'Cumulative Stableford for {chosen_teg}')
-            #     st.plotly_chart(fig_stableford, use_container_width=True)
-            fig_stableford = create_cumulative_graph(all_data, chosen_teg,  'Stableford Cum TEG', f'Trophy race: {chosen_teg}')
-            st.plotly_chart(fig_stableford, use_container_width=True)
-
-        with tab2: 
-            display_leaderboard(
-                leaderboard_df, 
-                'GrossVP', 
-                "Green Jacket Leaderboard (Best Gross)",
-                leader_label, 
-                ascending=True
-            )
-
-            # with st.expander("The race for the jacket..."):
-            #     fig_grossvp = create_cumulative_graph(all_data, chosen_teg, 'GrossVP Cum TEG', f'Cumulative gross for {chosen_teg}')
-            #     st.plotly_chart(fig_grossvp, use_container_width=True)
-
-            fig_grossvp = create_cumulative_graph(all_data, chosen_teg, 'GrossVP Cum TEG', f'Green Jacket race: {chosen_teg}')
-            st.plotly_chart(fig_grossvp, use_container_width=True)
-
+        display_leaderboard(
+            leaderboard_df, 
+            'GrossVP', 
+            "Green Jacket Leaderboard (Best Gross)",
+            leader_label, 
+            ascending=True
+        )
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")

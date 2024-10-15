@@ -1002,3 +1002,21 @@ def score_type_stats(df=None):
     stats['Holes_per_Par_or_Better'] = stats['Holes_Played'] / stats['Pars_or_Better']
     
     return stats
+
+def max_scoretype_per_round(df = None):
+
+    if df is None:
+        df = load_all_data(exclude_teg_50=True)
+
+    # Apply score types with grouping by Player, Round, and TEG
+    scores = apply_score_types(df, groupby_cols=['Player', 'Round', 'TEG'])
+    
+    # Find the maximum scores across rounds and TEGs for each player
+    max_scores = scores.groupby('Player').agg({
+        'Pars_or_Better': 'max',
+        'Birdies': 'max',
+        'Eagles': 'max',
+        'TBPs': 'max'
+    }).reset_index()
+    
+    return max_scores
