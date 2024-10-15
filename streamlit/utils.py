@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import numpy as np
 import logging
 from math import floor
@@ -15,11 +16,12 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 # Constants and Configurations
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Get the directory of the current file
 CONFIG: Dict[str, str] = {
-    "ROUND_INFO_PATH": "../data/round_info.csv"
+    "ROUND_INFO_PATH": os.path.join(BASE_DIR, "../data/round_info.csv")  # Update this for round_info.csv
 }
 
-FILE_PATH_ALL_DATA = '../data/all-data.parquet'
+FILE_PATH_ALL_DATA = os.path.join(BASE_DIR, "../data/all-data.parquet")  # Dynamically construct the path
 TOTAL_HOLES = 18
 
 PLAYER_DICT = {
@@ -58,8 +60,12 @@ def load_all_data(exclude_teg_50: bool = False, exclude_incomplete_tegs: bool = 
     Returns:
         pd.DataFrame: The filtered dataset.
     """
-    df = pd.read_parquet(FILE_PATH_ALL_DATA)
-    
+    if os.path.exists(FILE_PATH_ALL_DATA):
+        df = pd.read_parquet(FILE_PATH_ALL_DATA)
+    else:
+        st.error(f"File not found: {FILE_PATH_ALL_DATA}")
+        return pd.DataFrame()  # Return an empty DataFrame if file is missing
+
     # Ensure 'Year' is of integer type
     df['Year'] = df['Year'].astype('Int64')
     
