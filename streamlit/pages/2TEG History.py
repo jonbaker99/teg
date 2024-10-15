@@ -4,25 +4,11 @@ import altair as alt
 from utils import load_all_data, get_teg_winners, get_teg_rounds
 
 # === LOAD DATA === #
-all_data = load_all_data()
-
-# Filter out TEGNum 50 and remove the 'Year' column
-all_data = all_data[all_data['TEGNum'] != 50]
+all_data = load_all_data(exclude_incomplete_tegs=True, exclude_teg_50=True)
 
 
-# EXCLUDE INCOMPLETE TEGS
-# Step 1: Group the data by TEG and count the number of rounds with data
-rounds_per_teg = all_data.groupby('TEG')['Round'].nunique().reset_index()
-rounds_per_teg.columns = ['TEG', 'actual_rounds']
 
-# Step 2: Apply the `get_teg_rounds(TEG)` function to get the expected rounds for each TEG
-rounds_per_teg['expected_rounds'] = rounds_per_teg['TEG'].apply(get_teg_rounds)
-
-# Step 3: Filter out TEGs where actual rounds are less than expected rounds
-valid_tegs = rounds_per_teg[rounds_per_teg['actual_rounds'] >= rounds_per_teg['expected_rounds']]['TEG']
-
-# Step 4: Filter the original dataframe to only keep valid TEGs
-filtered_data = all_data[all_data['TEG'].isin(valid_tegs)]
+filtered_data = all_data.copy()
 
 # CREATE WINNERS TABLE
 
@@ -62,8 +48,8 @@ def create_bar_chart(df, x_col, y_col, title):
         color=alt.value('steelblue')
     ).properties(
         title=title,
-        width=350,
-        height=250
+        # width=350,
+        height=300
     )
     
     text = chart.mark_text(align='left', baseline='middle', dx=3).encode(text=x_col)

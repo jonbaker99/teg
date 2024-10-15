@@ -32,75 +32,71 @@ current_handicaps = pd.DataFrame({
 current_handicaps_formatted = current_handicaps.copy()
 current_handicaps_formatted['Change'] = current_handicaps_formatted['Change'].apply(format_change)
 
-tab1, tab2 = st.tabs(["TEG 17 Handicaps", "Handicap History"])
+# tab1, tab2 = st.tabs(["TEG 17 Handicaps", "Handicap History"])
 
-with tab1:
-    
-       # Function to insert Unicode Line Separator
-    
-    
-    def format_name(name):
-        return '  \n'.join(name.split(' '))  # Double space + newline for Markdown line break
-
-    current_handicaps['Handicap_formatted'] = current_handicaps['Handicap'].apply(format_name)
-
-
-    # Title
-    st.header("TEG 17 Handicaps")
-
-    # Create a container for custom metrics
-    custom_metric_container = st.container()
-
-    with custom_metric_container:
-        # Create six columns
-        cols = st.columns(6)
+# with tab1:
         
-        # Iterate through the columns and DataFrame rows simultaneously
-        for col, (_, row) in zip(cols, current_handicaps.iterrows()):
-            with col:
-                # Display the Handicap name with a line break using Markdown
-                #st.markdown(f"**{format_name(row['Handicap'])}**")
-                
-                # Display the TEG 17 value and Change using st.metric
-                st.metric(
-                    #label="TEG 17",
-                    label = row['Handicap_formatted'],
-                    value=row['TEG 17'],
-                    delta=row['Change'],
-                    delta_color='off'
-                )
+def format_name(name):
+    return '  \n'.join(name.split(' '))  # Double space + newline for Markdown line break
+
+current_handicaps['Handicap_formatted'] = current_handicaps['Handicap'].apply(format_name)
 
 
-    # Optional: Add some spacing or additional information
-    st.caption("Change shows difference in HC vs previous TEG")
+# Title
+st.header("TEG 17 Handicaps")
+
+# Create a container for custom metrics
+custom_metric_container = st.container()
+
+with custom_metric_container:
+    # Create six columns
+    cols = st.columns(6)
     
-    #'---'
-    #st.write(current_handicaps_formatted.to_html(index=False, justify='left'), unsafe_allow_html=True)
+    # Iterate through the columns and DataFrame rows simultaneously
+    for col, (_, row) in zip(cols, current_handicaps.iterrows()):
+        with col:
+            # Display the Handicap name with a line break using Markdown
+            #st.markdown(f"**{format_name(row['Handicap'])}**")
+            
+            # Display the TEG 17 value and Change using st.metric
+            st.metric(
+                #label="TEG 17",
+                label = row['Handicap_formatted'],
+                value=row['TEG 17'],
+                delta=row['Change'],
+                delta_color='inverse'
+            )
 
-   
 
-    # st.write(current_handicaps)
+# Optional: Add some spacing or additional information
+st.caption("Change shows difference in HC vs previous TEG")
 
-    # # Create a container for metrics
-    # metric_container = st.container()
-
-    # with metric_container:
-        
-    #     # Create six columns
-    #     col1,col2,col3,col4,col5,col6 = st.columns(6)
-
-    #     with col1:
-    #         st.metric(label='Gregg WILLIAMS',value=16,delta=0,delta_color='inverse')
-
-    #     with col2:
-    #         st.metric(label='David MULLIN',value=21,delta=1,delta_color='inverse')
-
- 
-
+#'---'
+#st.write(current_handicaps_formatted.to_html(index=False, justify='left'), unsafe_allow_html=True)
 
 
 
-with tab2:
+# st.write(current_handicaps)
+
+# # Create a container for metrics
+# metric_container = st.container()
+
+# with metric_container:
+    
+#     # Create six columns
+#     col1,col2,col3,col4,col5,col6 = st.columns(6)
+
+#     with col1:
+#         st.metric(label='Gregg WILLIAMS',value=16,delta=0,delta_color='inverse')
+
+#     with col2:
+#         st.metric(label='David MULLIN',value=21,delta=1,delta_color='inverse')
+
+
+
+
+
+with st.expander("Handicap history"):
     try:
         historic_handicaps = pd.read_csv("../data/handicaps.csv")
         historic_handicaps = historic_handicaps[historic_handicaps['TEG']!='TEG 50']

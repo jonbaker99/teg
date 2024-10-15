@@ -1,12 +1,29 @@
 import streamlit as st
+import pandas as pd
 import random
 
-def format_section(title, details, value):
+def create_stat_section(title, value=None, df=None):
+    # Create the title and value part
+    title_html = f"<h2><span class='title'>{title}</span>"
+    if value is not None:
+        title_html += f"<span class='value'> {value}</span>"
+    title_html += "</h2>"
+    
+    # Create the details part from the DataFrame
+    details_html = ""
+    if df is not None and not df.empty:
+        rows = []
+        for _, row in df.iterrows():
+            row_str = " • ".join(f"<span class='{col}'>{row[col]}</span>" for col in df.columns)
+            rows.append(f"<strong>{row_str}</strong>")
+        details_html = "<br>".join(rows)
+    
+    # Combine all parts
     return f"""
     <div class="stat-section">
-        <h2><span class='title'>{title}</span><span class='value'> {value}</span></h2>
+        {title_html}
         <div class="stat-details">
-            {details}
+            {details_html}
         </div>
     </div>
     """
@@ -60,6 +77,15 @@ st.markdown("""
         color: #666;
         line-height: 1.4;
     }
+    .stat-details .name {
+        font-weight: bold;
+    }
+    .stat-details .course {
+        font-style: italic;
+    }
+    .stat-details .year {
+        color: #999;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -75,31 +101,27 @@ with col1:
 with col2:
     st.subheader("Round Records")
 
-# Function to create a stat section within a column
-def create_stat_column(column, title, details, value):
-    with column:
-        st.markdown(format_section(title, details, value), unsafe_allow_html=True)
-
-# Function to generate random names and courses
-def generate_random_data(num_entries=1):
+# Function to generate random data
+def generate_random_data(num_rows):
     names = ["John Smith", "Emma Johnson", "Michael Brown", "Olivia Davis", "William Wilson", "Sophia Taylor", "James Anderson", "Ava Thomas", "Robert Jackson", "Isabella White"]
     courses = ["Pebble Beach", "St Andrews", "Augusta National", "Royal Melbourne", "Pinehurst No. 2", "Muirfield", "Oakmont", "Valderrama", "Whistling Straits", "Turnberry"]
     years = [str(year) for year in range(2010, 2024)]
     
-    entries = []
-    for _ in range(num_entries):
-        name = random.choice(names)
-        course = random.choice(courses)
-        year = random.choice(years)
-        entries.append(f"<strong>{name}</strong> ({course}, {year})")
-    
-    return "<br>".join(entries)
+    data = []
+    for _ in range(num_rows):
+        data.append({
+            "name": random.choice(names),
+            "course": random.choice(courses),
+            "year": random.choice(years)
+        })
+    return pd.DataFrame(data)
 
-# Function to fill a column with all stat sections
+# Function to fill a column with stat sections
 def fill_column(column):
-    create_stat_column(column, "Best Score", generate_random_data(2), "25")  # Two entries for a tie
-    create_stat_column(column, "Best Other Thing", generate_random_data(1), "89")
-    create_stat_column(column, "And Another Thing", generate_random_data(1), "+7")
+    with column:
+        st.markdown(create_stat_section("Best Score", "25", generate_random_data(2)), unsafe_allow_html=True)
+        st.markdown(create_stat_section("Best Other Thing", "89", generate_random_data(1)), unsafe_allow_html=True)
+        st.markdown(create_stat_section("And Another Thing", "+7", generate_random_data(1)), unsafe_allow_html=True)
 
 # Fill both columns with different content
 fill_column(col1)
