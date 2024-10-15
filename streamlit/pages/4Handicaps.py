@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 
 st.set_page_config(page_title="Handicaps")
 
@@ -94,11 +95,14 @@ st.caption("Change shows difference in HC vs previous TEG")
 
 
 
-
+# Define the base directory dynamically
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Update the path to the handicaps.csv file
+HANDICAPS_FILE_PATH = os.path.join(BASE_DIR, "../data/handicaps.csv")
 
 with st.expander("Handicap history"):
     try:
-        historic_handicaps = pd.read_csv("../data/handicaps.csv")
+        historic_handicaps = pd.read_csv(HANDICAPS_FILE_PATH)
         historic_handicaps = historic_handicaps[historic_handicaps['TEG']!='TEG 50']
         # Apply formatting to all columns except the first one (assuming the first column is names or dates)
         for col in historic_handicaps.columns[1:]:
@@ -107,7 +111,8 @@ with st.expander("Handicap history"):
         # Display historic handicaps without index, non-sortable, and left-aligned headers
         st.write(historic_handicaps.to_html(index=False, justify='left'), unsafe_allow_html=True)
     except FileNotFoundError:
-        st.error("Error: The file '../data/handicaps.csv' was not found.")
+        st.error(f"File not found: {HANDICAPS_FILE_PATH}")
+        st.error(f"File not found: {HANDICAPS_FILE_PATH}")
     except pd.errors.EmptyDataError:
         st.warning("The file '../data/handicaps.csv' is empty.")
     except Exception as e:
