@@ -15,7 +15,7 @@ name_mapping = {
     'Gross vs Par': 'GrossVP',
     'Score': 'Sc',
     'Net vs Par': 'NetVP',
-    'Stableford Points': 'Stableford'
+    'Stableford': 'Stableford'
 }
 inverted_name_mapping = {v: k for k, v in name_mapping.items()}
 
