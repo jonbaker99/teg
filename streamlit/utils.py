@@ -1038,13 +1038,12 @@ def find_project_root(current_path: Path, folder_name: str) -> Path:
         current_path = current_path.parent
     return current_path
 
-
-def get_base_directory(folder_name = None):
-
-    if folder_name is None:
-        folder_name = 'TEG'
-
-    # Find the TEG directory (search for the folder named 'TEG')
-    BASE_DIR = find_project_root(Path(__file__).resolve(), folder_name)
+def get_base_directory():
+    # Check if running on Streamlit Cloud by checking if "/app/TEG" path exists
+    if Path("/app/TEG").exists():
+        BASE_DIR = Path("/app/TEG")  # Adjusted to match your folder structure
+    else:
+        # Running locally, use find_project_root to find the TEG directory
+        BASE_DIR = find_project_root(Path(__file__).resolve(), 'TEG')
 
     return BASE_DIR
