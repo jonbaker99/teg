@@ -13,9 +13,9 @@ st.markdown(
     """
     ### Contents (use sidebar)
     1. TEG History
-      - Winners by year
-      - Results tables by TEG
-      - Race for the title charts
+        - Winners by year
+        - Results tables by TEG
+        - Race for the title charts
     2. TEG Records
         - Best TEGs, Rounds and 9s
         - Top n TEGs and Rounds
