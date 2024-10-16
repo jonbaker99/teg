@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from utils import load_all_data, get_teg_winners, get_teg_rounds
+from utils import load_all_data, get_teg_winners, get_teg_rounds, datawrapper_table_css
 
 # === LOAD DATA === #
 all_data = load_all_data(exclude_incomplete_tegs=True, exclude_teg_50=True)
 filtered_data = all_data.copy()
-
+datawrapper_table_css()
 # CREATE WINNERS TABLE
 
 winners = get_teg_winners(filtered_data).drop(columns=['Year'])
@@ -58,7 +58,7 @@ def create_bar_chart(df, x_col, y_col, title):
 # Show the 3 bar charts from the 'winners' page
 st.subheader("Competition wins")
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3 = st.columns(3,gap = 'medium')
 
 with col1:
     trophy_chart = create_bar_chart(trophy_sorted, 'Trophy', 'Player', 'TEG Trophy Wins')
@@ -77,7 +77,7 @@ st.divider()
 
 # Show the table and footnote from the 'history' page
 st.subheader("TEG History")
-st.write(winners.to_html(index=False, justify='left'), unsafe_allow_html=True)
+st.write(winners.to_html(index=False, justify='left', classes='datawrapper-table'), unsafe_allow_html=True)
 st.caption('*Green Jacket awarded in TEG 5 for best stableford round; DM had best gross score')
 
 st.divider()
@@ -86,4 +86,4 @@ st.divider()
 # Show the 'Doubles' section from the 'winners' page
 st.subheader("Doubles")
 st.caption(f"There have been {same_player_both.shape[0]} trophy / jacket doubles")
-st.write(player_doubles.to_html(index=False, justify='left'), unsafe_allow_html=True)
+st.write(player_doubles.to_html(index=False, justify='left', classes='datawrapper-table'), unsafe_allow_html=True)

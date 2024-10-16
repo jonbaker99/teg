@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from utils import get_ranked_teg_data, get_ranked_round_data, get_ranked_frontback_data, safe_ordinal
-from utils import chosen_rd_context, chosen_teg_context
+from utils import chosen_rd_context, chosen_teg_context, datawrapper_table_css
 
 # Initialize session state
 if 'teg_r' not in st.session_state:
@@ -10,6 +10,8 @@ if 'rd_r' not in st.session_state:
     st.session_state.rd_r = None
 if 'teg_t' not in st.session_state:
     st.session_state.teg_t = None
+
+datawrapper_table_css()
 
 def reset_round_selection():
     st.session_state.teg_r = max_teg_r
@@ -55,7 +57,7 @@ with tab1:
     for metric in ['Sc', 'GrossVP', 'NetVP', 'Stableford']:
         st.markdown(f"**{metric}**")
         output = chosen_rd_context(df_round, teg_r, rd_r, metric)
-        st.write(output.to_html(index=False, justify='left', classes='jb-table-test'), unsafe_allow_html=True)
+        st.write(output.to_html(index=False, justify='left', classes='jb-table-test, datawrapper-table'), unsafe_allow_html=True)
 
 with tab2:
     df_teg = get_ranked_teg_data()
@@ -80,4 +82,4 @@ with tab2:
     for metric in ['Sc', 'GrossVP', 'NetVP', 'Stableford']:
         st.markdown(f"**{metric}**")
         output = chosen_teg_context(df_teg, teg_t, metric)
-        st.write(output.to_html(index=False, justify='left', classes='jb-table-test'), unsafe_allow_html=True)
+        st.write(output.to_html(index=False, justify='left', classes='jb-table-test, datawrapper-table'), unsafe_allow_html=True)

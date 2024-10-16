@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
-from utils import get_base_directory
+from utils import get_base_directory, datawrapper_table_css
+
 
 st.set_page_config(page_title="Handicaps")
-
+datawrapper_table_css()
 def format_change(val):
     if val > 0:
         return f"+{val}"
@@ -114,7 +115,7 @@ with st.expander("Handicap history"):
             historic_handicaps[col] = historic_handicaps[col].apply(format_value)
         
         # Display historic handicaps without index, non-sortable, and left-aligned headers
-        st.write(historic_handicaps.to_html(index=False, justify='left'), unsafe_allow_html=True)
+        st.write(historic_handicaps.to_html(index=False, justify='left', classes = 'datawrapper-table'), unsafe_allow_html=True)
     except FileNotFoundError:
         st.error(f"File not found: {HANDICAPS_FILE_PATH}")
         historic_handicaps = pd.DataFrame()  # Return an empty DataFrame if file is missing

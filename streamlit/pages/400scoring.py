@@ -1,9 +1,10 @@
-from utils import score_type_stats, load_all_data, apply_score_types, max_scoretype_per_round, format_vs_par
+from utils import score_type_stats, load_all_data, apply_score_types, max_scoretype_per_round, format_vs_par, datawrapper_table_css
 import streamlit as st
 import pandas as pd, altair as alt
 import numpy as np
 
 st.set_page_config(page_title="TEG Scoring")
+datawrapper_table_css()
 st.title("Scoring")
 
 '---'
@@ -33,7 +34,7 @@ def format_value(value):
 for column in avg_grossvp.columns:
     avg_grossvp[column] = avg_grossvp[column].apply(format_value)
 
-st.write(avg_grossvp.to_html(classes='dataframe'), unsafe_allow_html=True)
+st.write(avg_grossvp.to_html(classes='dataframe, datawrapper-table'), unsafe_allow_html=True)
 
 '---'
 
@@ -134,13 +135,13 @@ for i, tab in enumerate(tabs):
         
         table_df = scoring_stats[['Player'] + chart_fields].sort_values(by=chart_fields, ascending=[False, True])
         table_df = format_dataframe_columns(table_df)
-        st.write(table_df.to_html(index=False, justify='left'), unsafe_allow_html=True)
+        st.write(table_df.to_html(index=False, justify='left', classes = 'datawrapper-table'), unsafe_allow_html=True)
 
 '---'
 
 st.subheader('Most of each type of score in a single round')
 max_by_round = max_scoretype_per_round()
-st.write(max_by_round.to_html(index=False, justify='left'), unsafe_allow_html=True)
+st.write(max_by_round.to_html(index=False, justify='left', classes = 'datawrapper-table'), unsafe_allow_html=True)
 
 '---'
 
@@ -214,4 +215,4 @@ def summarize_multi_score_running_sum(df):
 all_data = load_all_data()
 runsums = calculate_multi_score_running_sum(all_data)
 streak_summary = summarize_multi_score_running_sum(runsums)
-st.write(streak_summary.to_html(index=False, justify='left'), unsafe_allow_html=True)
+st.write(streak_summary.to_html(index=False, justify='left', classes = 'datawrapper-table'), unsafe_allow_html=True)

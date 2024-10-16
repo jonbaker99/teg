@@ -1,4 +1,4 @@
-from utils import load_all_data, get_best, get_ranked_teg_data, get_ranked_round_data
+from utils import load_all_data, get_best, get_ranked_teg_data, get_ranked_round_data, datawrapper_table_css
 import streamlit as st
 import numpy as np, pandas as pd
 
