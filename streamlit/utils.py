@@ -1031,19 +1031,33 @@ def max_scoretype_per_round(df = None):
 
 
 # Function to find the root directory (TEG folder) by looking for the 'TEG' folder name
-def find_project_root(current_path: Path, folder_name: str) -> Path:
-    while current_path.name != folder_name:
-        if current_path == current_path.parent:
-            raise RuntimeError(f"Folder '{folder_name}' not found in the directory tree")
-        current_path = current_path.parent
-    return current_path
+# def find_project_root(current_path: Path, folder_name: str) -> Path:
+#     while current_path.name != folder_name:
+#         if current_path == current_path.parent:
+#             raise RuntimeError(f"Folder '{folder_name}' not found in the directory tree")
+#         current_path = current_path.parent
+#     return current_path
+
+# def get_base_directory():
+#     # Check if running on Streamlit Cloud by checking if "/app/TEG" path exists
+#     if Path("/app/TEG").exists():
+#         BASE_DIR = Path("/app/TEG")  # Adjusted to match your folder structure
+#     else:
+#         # Running locally, use find_project_root to find the TEG directory
+#         BASE_DIR = find_project_root(Path(__file__).resolve(), 'TEG')
+
+#     return BASE_DIR
 
 def get_base_directory():
-    # Check if running on Streamlit Cloud by checking if "/app/TEG" path exists
-    if Path("/app/TEG").exists():
-        BASE_DIR = Path("/app/TEG")  # Adjusted to match your folder structure
+    # Get the current working directory
+    current_dir = Path.cwd()
+    
+    # Check if we're in the Streamlit subfolder or not
+    if current_dir.name == "Streamlit":
+        # If we're in the Streamlit folder, go up one level to TEG
+        BASE_DIR = current_dir.parent
     else:
-        # Running locally, use find_project_root to find the TEG directory
-        BASE_DIR = find_project_root(Path(__file__).resolve(), 'TEG')
-
+        # Assume we are already in the TEG directory
+        BASE_DIR = current_dir
+    
     return BASE_DIR
