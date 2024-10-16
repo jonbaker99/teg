@@ -5,9 +5,6 @@ from utils import load_all_data, get_teg_winners, get_teg_rounds
 
 # === LOAD DATA === #
 all_data = load_all_data(exclude_incomplete_tegs=True, exclude_teg_50=True)
-
-
-
 filtered_data = all_data.copy()
 
 # CREATE WINNERS TABLE
@@ -45,11 +42,11 @@ def create_bar_chart(df, x_col, y_col, title):
         #x=alt.X(x_col, title=None, axis=alt.Axis(grid=False, labels=False, domain=False), scale=alt.Scale(domain=(0, max_wins+2))),
         x=alt.X(x_col, title=None, axis=alt.Axis(grid=False, labels=False, domain=False)),
         y=alt.Y(y_col, sort='-x', title=None),
-        color=alt.value('steelblue')
+        #color=alt.value('steelblue')
     ).properties(
         title=title,
         # width=350,
-        height=300
+        height=320
     )
     
     text = chart.mark_text(align='left', baseline='middle', dx=3).encode(text=x_col)
