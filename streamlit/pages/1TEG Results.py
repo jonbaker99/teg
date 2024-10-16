@@ -3,7 +3,7 @@ import pandas as pd
 from typing import List, Dict, Any
 import logging
 from utils import get_teg_rounds, get_round_data, load_all_data
-from make_charts import create_cumulative_graph
+from make_charts import create_cumulative_graph, adjusted_grossvp, adjusted_stableford
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -265,14 +265,31 @@ def main() -> None:
                 ascending=False
             )
 
-            
-            # teg_data = all_data[all_data['TEG'] == chosen_teg]
+            stableford_chart_type = st.radio(
+                    "Choose Stableford chart type:",
+                    ('Standard', 'Adjusted'),
+                    key='stableford_chart_type'
+                )
+            st.caption("Adjusted view 'zooms in' by showing performance vs. net par to more clearly show gaps between players")
 
-            # with st.expander("The race for the trophy..."):
-            #     fig_stableford = create_cumulative_graph(all_data, chosen_teg,  'Stableford Cum TEG', f'Cumulative Stableford for {chosen_teg}')
-            #     st.plotly_chart(fig_stableford, use_container_width=True)
-            fig_stableford = create_cumulative_graph(all_data, chosen_teg,  'Stableford Cum TEG', f'Trophy race: {chosen_teg}')
+            # fig_stableford = create_cumulative_graph(all_data, chosen_teg,  'Stableford Cum TEG', f'Trophy race: {chosen_teg}')
+            # st.plotly_chart(fig_stableford, use_container_width=True)
+
+            # Create and display Stableford chart
+            if stableford_chart_type == 'Standard':
+                fig_stableford = create_cumulative_graph(all_data, chosen_teg, 'Stableford Cum TEG', 
+                                                        f'Trophy race: {chosen_teg}',
+                                                        y_axis_label='Cumulative Stableford Points',
+                                                        chart_type='stableford')
+            else:
+                fig_stableford = create_cumulative_graph(all_data, chosen_teg, 'Adjusted Stableford', 
+                                                        f'Trophy race (Adjusted): {chosen_teg}', 
+                                                        y_calculation=adjusted_stableford,
+                                                        y_axis_label='Cumulative Stableford Points vs. net par',
+                                                        chart_type='stableford')
+
             st.plotly_chart(fig_stableford, use_container_width=True)
+            st.caption('Higher = better')
 
         with tab2: 
             display_leaderboard(
@@ -287,8 +304,29 @@ def main() -> None:
             #     fig_grossvp = create_cumulative_graph(all_data, chosen_teg, 'GrossVP Cum TEG', f'Cumulative gross for {chosen_teg}')
             #     st.plotly_chart(fig_grossvp, use_container_width=True)
 
-            fig_grossvp = create_cumulative_graph(all_data, chosen_teg, 'GrossVP Cum TEG', f'Green Jacket race: {chosen_teg}')
+
+            grossvp_chart_type = st.radio(
+                "Choose Green Jacket chart type:",
+                ('Standard', 'Adjusted'),
+                key='grossvp_chart_type'
+            )
+            st.caption("Adjusted view 'zooms in' by showing performance vs. bogey golf to more clearly show gaps between players")
+
+            # Create and display Green Jacket chart
+            if grossvp_chart_type == 'Standard':
+                fig_grossvp = create_cumulative_graph(all_data, chosen_teg, 'GrossVP Cum TEG', 
+                                                    f'Green Jacket race: {chosen_teg}',
+                                                    y_axis_label='Cumulative gross vs par',
+                                                    chart_type='gross')
+            else:
+                fig_grossvp = create_cumulative_graph(all_data, chosen_teg, 'Adjusted GrossVP', 
+                                                    f'Green Jacket race (Adjusted): {chosen_teg}', 
+                                                    y_calculation=adjusted_grossvp,
+                                                    y_axis_label='Cumulative gross vs. bogey golf (par+1)',
+                                                    chart_type='gross')
+
             st.plotly_chart(fig_grossvp, use_container_width=True)
+            st.caption('Lower = better')
 
 
     except Exception as e:
