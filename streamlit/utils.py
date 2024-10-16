@@ -7,6 +7,7 @@ from google.oauth2.service_account import Credentials
 import gspread
 from typing import Dict, Any, List
 import streamlit as st
+from pathlib import Path
 
 #print("utils module is being imported")
 
@@ -244,34 +245,33 @@ def save_to_parquet(df: pd.DataFrame, output_file: str) -> None:
     logger.info(f"Data successfully saved to {output_file}")
 
 
-def get_google_sheet(sheet_name: str, worksheet_name: str, creds_path: str) -> pd.DataFrame:
+def get_google_sheet(sheet_name: str, worksheet_name: str) -> pd.DataFrame:
     """
-    Load data from a specified Google Sheet and worksheet.
-
-    Parameters:
-        sheet_name (str): The name of the Google Sheet.
-        worksheet_name (str): The name of the worksheet within the Google Sheet.
-        creds_path (str): The path to the service account credentials JSON file.
-
-    Returns:
-        pd.DataFrame: DataFrame containing the data from the specified worksheet.
+    Load data from a specified Google Sheet and worksheet using credentials stored in Streamlit secrets.
     """
     logger.info(f"Fetching data from Google Sheet: {sheet_name}, Worksheet: {worksheet_name}")
+    
+    # Define the required scope for Google Sheets and Drive access
     SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
     try:
-        api_key = st.secrets["GOOGLE_SHEETS_API_KEY"]
-        #creds = Credentials.from_service_account_file(creds_path, scopes=SCOPE)
-        creds = Credentials(None, token=api_key)
+        # Use service account info from Streamlit secrets
+        service_account_info = st.secrets["google"]
+        creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPE)
+        
+        # Authorize and access the Google Sheets API
         client = gspread.authorize(creds)
         sheet = client.open(sheet_name).worksheet(worksheet_name)
+        
+        # Fetch data from the sheet
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
         logger.info("Data fetched successfully from Google Sheets.")
         return df
     except Exception as e:
         logger.error(f"Error fetching data from Google Sheets: {e}")
+        st.error(f"Error fetching data: {e}")
         raise
-
 
 def reshape_round_data(df: pd.DataFrame, id_vars: List[str]) -> pd.DataFrame:
     """
@@ -1028,3 +1028,23 @@ def max_scoretype_per_round(df = None):
     }).reset_index()
     
     return max_scores
+
+
+# Function to find the root directory (TEG folder) by looking for the 'TEG' folder name
+def find_project_root(current_path: Path, folder_name: str) -> Path:
+    while current_path.name != folder_name:
+        if current_path == current_path.parent:
+            raise RuntimeError(f"Folder '{folder_name}' not found in the directory tree")
+        current_path = current_path.parent
+    return current_path
+
+
+def get_base_directory(folder_name = None):
+
+    if folder_name is None:
+        folder_name = 'TEG'
+
+    # Find the TEG directory (search for the folder named 'TEG')
+    BASE_DIR = find_project_root(Path(__file__).resolve(), folder_name)
+
+    return BASE_DIR

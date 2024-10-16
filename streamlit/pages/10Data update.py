@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import logging
+import os
+from pathlib import Path
 from typing import Optional
 from utils import (
     process_round_for_all_scores,
@@ -9,19 +11,41 @@ from utils import (
     load_and_prepare_handicap_data,
     summarise_existing_rd_data,
     update_all_data,
-    check_for_complete_and_duplicate_data  # Ensure this function is imported
+    check_for_complete_and_duplicate_data,
+    get_base_directory
 )
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define Constants
-CREDS_PATH = r"../credentials/maps-1489139675490-41bee944be4e.json"
-ALL_SCORES_PATH = '../data/all-scores.csv'
-HANDICAPS_PATH = '../data/handicaps.csv'
-PARQUET_FILE = '../data/all-data.parquet'
-CSV_OUTPUT_FILE = '../data/all-data.csv'
+# # Define the Base Directory (this ensures paths work on GitHub and locally)
+# BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# #st.write(BASE_DIR)
+
+# # Function to find the root directory (TEG folder) by looking for the 'TEG' folder name
+# def find_project_root(current_path: Path, folder_name: str) -> Path:
+#     while current_path.name != folder_name:
+#         if current_path == current_path.parent:
+#             raise RuntimeError(f"Folder '{folder_name}' not found in the directory tree")
+#         current_path = current_path.parent
+#     return current_path
+
+# folder_name = 'TEG'
+
+# # Find the TEG directory (search for the folder named 'TEG')
+# BASE_DIR = find_project_root(Path(__file__).resolve(), folder_name)
+# #st.write(BASE_DIR)
+
+BASE_DIR = get_base_directory()
+#st.write(BASE_DIR)
+
+# Define Constants with Dynamic Paths
+#CREDS_PATH = BASE_DIR / 'credentials' / 'maps-1489139675490-41bee944be4e.json'
+ALL_SCORES_PATH = BASE_DIR / 'data' / 'all-scores.csv'
+HANDICAPS_PATH = BASE_DIR / 'data' / 'handicaps.csv'
+PARQUET_FILE = BASE_DIR / 'data' / 'all-data.parquet'
+CSV_OUTPUT_FILE = BASE_DIR / 'data' / 'all-data.csv'
 
 # Initialize Session State
 def initialize_session_state():
@@ -48,12 +72,12 @@ if DEBUG_MODE:
 # Function Definitions
 
 #@st.cache_data(show_spinner=False)
-def load_google_sheet(sheet_name: str, worksheet_name: str, creds_path: str) -> pd.DataFrame:
+def load_google_sheet(sheet_name: str, worksheet_name: str) -> pd.DataFrame:
     """
     Load data from a specified Google Sheet and worksheet.
     """
     logger.info("Fetching data from Google Sheets.")
-    return get_google_sheet(sheet_name, worksheet_name, creds_path)
+    return get_google_sheet(sheet_name, worksheet_name)
 
 #@st.cache_data(show_spinner=False)
 def load_handicap_data(path: str) -> pd.DataFrame:
@@ -89,13 +113,13 @@ def remove_duplicates(existing_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.Dat
 
 # Streamlit App Title
 st.title("🏌️‍♂️ TEG Round Data Processing")
-
+#st.write(st.secrets)
 try:
     # Step 1: Load Data
     if not st.session_state.data_loaded:
         if st.button("🔄 Load Data", key="load_data_btn"):
             with st.spinner("Loading data from Google Sheets..."):
-                df = load_google_sheet("TEG Round Input", "Scores", CREDS_PATH)
+                df = load_google_sheet("TEG Round Input", "Scores")
                 st.success("✅ Data loaded from Google Sheets.")
 
                 # Reshape to Long Format

@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
+from utils import get_base_directory
 
 st.set_page_config(page_title="Handicaps")
 
@@ -96,9 +97,13 @@ st.caption("Change shows difference in HC vs previous TEG")
 
 
 # Define the base directory dynamically
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+#BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = get_base_directory()
+
 # Update the path to the handicaps.csv file
-HANDICAPS_FILE_PATH = os.path.join(BASE_DIR, "../data/handicaps.csv")
+#HANDICAPS_FILE_PATH = os.path.join(BASE_DIR, "/data/handicaps.csv")
+HANDICAPS_FILE_PATH = BASE_DIR / 'data' / 'handicaps.csv'
+
 
 with st.expander("Handicap history"):
     try:
@@ -112,8 +117,8 @@ with st.expander("Handicap history"):
         st.write(historic_handicaps.to_html(index=False, justify='left'), unsafe_allow_html=True)
     except FileNotFoundError:
         st.error(f"File not found: {HANDICAPS_FILE_PATH}")
-        st.error(f"File not found: {HANDICAPS_FILE_PATH}")
+        historic_handicaps = pd.DataFrame()  # Return an empty DataFrame if file is missing
     except pd.errors.EmptyDataError:
-        st.warning("The file '../data/handicaps.csv' is empty.")
+        st.warning("The file '/data/handicaps.csv' is empty.")
     except Exception as e:
         st.error(f"An error occurred while reading the CSV file: {str(e)}")
