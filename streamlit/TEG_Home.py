@@ -23,7 +23,7 @@ st.markdown(
         - Personal Bests
         - Other Records
     
-    3. ### TEG Scoring
+    3. **TEG Scoring**
         - Score by Par
         - Career Eagles, Birdies and Pars
         - Most birdies etc. in a round
