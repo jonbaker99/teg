@@ -801,7 +801,7 @@ def get_best(df, measure_to_use, player_level = False, top_n = 1):
     measure_fn = 'Rank_within_' + ('player' if player_level else 'all') + f'_{measure_to_use}' 
 
     #measure_fn
-    return df[df[measure_fn] == top_n]
+    return df[df[measure_fn] <= top_n]
 
 def ordinal(n):
     if 11 <= (n % 100) <= 13:
