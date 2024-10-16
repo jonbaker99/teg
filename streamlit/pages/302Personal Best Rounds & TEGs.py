@@ -11,6 +11,8 @@ rd_data_ranked['Round'] = rd_data_ranked['TEG'] +'|R' + rd_data_ranked['Round'].
 
 # selected_measure = st.radio("Select measure:", measures,horizontal=True)
 
+
+
 name_mapping = {
     'Gross vs Par': 'GrossVP',
     'Score': 'Sc',
@@ -68,8 +70,8 @@ tab1, tab2 = st.tabs(["Best TEGs","Best Rounds"])
 
 with tab1:
     st.markdown(f'### Personal Best TEGs: {selected_friendly_name}')
-    st.write(best_t.to_html(escape=False, index=False, justify='left'), unsafe_allow_html=True)
+    st.write(best_t.to_html(escape=False, index=False, justify='left', classes='datawrapper-table'), unsafe_allow_html=True)
 
 with tab2:
     st.markdown(f'### Personal Best Rounds: {selected_friendly_name}')
-    st.write(best_r.to_html(escape=False, index=False, justify='left'), unsafe_allow_html=True)
+    st.write(best_r.to_html(escape=False, index=False, justify='left', classes='datawrapper-table'), unsafe_allow_html=True)

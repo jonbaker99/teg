@@ -1061,3 +1061,37 @@ def get_base_directory():
         BASE_DIR = current_dir
     
     return BASE_DIR
+
+
+def datawrapper_table_css():
+    st.markdown("""
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+                .datawrapper-table {
+                    font-family: Roboto, Arial, sans-serif !important;
+                    border-collapse: separate !important;
+                    border-spacing: 0 !important;
+                    font-size: 14px !important;
+                    width: 100%;
+                    max-width: 600px;
+                    margin-bottom: 40px !important;
+                    border: none !important; /* Removes the external table border */
+                }
+                .datawrapper-table th, .datawrapper-table td {
+                    text-align: center !important;
+                    padding: 12px 8px !important;
+                    border: none !important;
+                    border-bottom: 1px solid #e0e0e0 !important;
+                    word-wrap: break-word;
+                }
+                .datawrapper-table th {
+                    font-weight: bold !important;
+                    border-bottom: 2px solid #000 !important;
+                }
+                .datawrapper-table tr:hover {
+                    background-color: #f5f5f5 !important;
+                }
+
+            </style>
+        """, unsafe_allow_html=True)
