@@ -38,12 +38,12 @@ FIELD_PROPERTIES = {
 }
 
 # Set the title of the app
-st.title("TEG Records")
+st.title("Best rounds")
 
 # Sidebar for user input
-st.sidebar.header("Settings")
-n_keep = st.sidebar.number_input(
-    "Number of Rows to Keep",
+#st.sidebar.header("Settings")
+n_keep = st.number_input(
+    "Number of rounds to show",
     min_value=1,
     max_value=100,
     value=DEFAULT_TOP_N,
@@ -177,7 +177,7 @@ def display_custom_aligned_df(df, title):
 
 # Load data with a loading spinner
 with st.spinner('Loading data...'):
-    all_data = load_data()
+    all_data = load_all_data(exclude_teg_50=True)
 
 rd_fields = ['Player', 'TEG', 'Round', 'Course']
 
@@ -213,20 +213,20 @@ tab_to_title = {
 for tab_label, tab in zip(tab_labels, tabs):
     with tab:
 
-        st.subheader(f"Best {tab_label}")
+        st.markdown(f"### Best rounds: {tab_label}")
         #st.markdown("---")  # Separator
 
 
         # Display TEG Record Placeholder
-        st.markdown("**BEST TEGS**")
-        st.write("TEG Record - Coming Soon")
+        #st.markdown("**BEST TEGS**")
+        #st.write("TEG Record - Coming Soon")
         
         # st.markdown("---")  # Separator
         
         # Display Round Record
         round_title = tab_to_title.get(tab_label)
         if round_title and round_title in results:
-            st.markdown("**BEST ROUNDS**")
+            #st.markdown("**BEST ROUNDS**")
             display_custom_aligned_df(results[round_title], round_title)
         else:
             st.write("No data available for this section.")
