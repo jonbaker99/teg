@@ -24,10 +24,6 @@ st.markdown('Shows how latest or selected rounds and TEGs compare to other round
 tab1, tab2 = st.tabs(["Chosen Round","Chosen TEG"])
 
 with tab1:
-
-    # ROUND CONTEXT
-    #st.subheader("Rounds")
-
     df_round = get_ranked_round_data()
     max_teg_r = df_round.loc[df_round['TEGNum'].idxmax(), 'TEG']
     max_rd_in_max_teg = df_round[df_round['TEG'] == max_teg_r]['Round'].max()
@@ -43,12 +39,14 @@ with tab1:
     with col1:
         teg_options = sorted(df_round['TEG'].unique())
         teg_index = teg_options.index(st.session_state.teg_r)
-        teg_r = st.selectbox("Select TEG (Round)", options=teg_options, index=teg_index, key='teg_r')
+        teg_r = st.selectbox("Select TEG (Round)", options=teg_options, index=teg_index, key='teg_r_select')
+        st.session_state.teg_r = teg_r
 
     with col2:
         rd_options = sorted(df_round[df_round['TEG'] == teg_r]['Round'].unique())
         rd_index = rd_options.index(st.session_state.rd_r) if st.session_state.rd_r in rd_options else 0
-        rd_r = st.selectbox("Select Round", options=rd_options, index=rd_index, key='rd_r')
+        rd_r = st.selectbox("Select Round", options=rd_options, index=rd_index, key='rd_r_select')
+        st.session_state.rd_r = rd_r
 
     with col3:
         st.button("Latest Round", on_click=reset_round_selection)
@@ -56,14 +54,10 @@ with tab1:
     # Display round context tables
     for metric in ['Sc', 'GrossVP', 'NetVP', 'Stableford']:
         st.markdown(f"**{metric}**")
-        #st.table(chosen_rd_context(df_round, teg_r, rd_r, metric))
         output = chosen_rd_context(df_round, teg_r, rd_r, metric)
         st.write(output.to_html(index=False, justify='left', classes='jb-table-test'), unsafe_allow_html=True)
 
 with tab2:
-    # TEG CONTEXT
-    #st.subheader("TEGs")
-
     df_teg = get_ranked_teg_data()
     max_teg_t = df_teg.loc[df_teg['TEGNum'].idxmax(), 'TEG']
 
@@ -76,7 +70,8 @@ with tab2:
     with col1:
         teg_options = sorted(df_teg['TEG'].unique())
         teg_index = teg_options.index(st.session_state.teg_t)
-        teg_t = st.selectbox("Select TEG", options=teg_options, index=teg_index, key='teg_t')
+        teg_t = st.selectbox("Select TEG", options=teg_options, index=teg_index, key='teg_t_select')
+        st.session_state.teg_t = teg_t
 
     with col2:
         st.button("Latest TEG", on_click=reset_teg_selection)
