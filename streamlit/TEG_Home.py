@@ -16,19 +16,22 @@ st.markdown(
         - Winners by year
         - Results tables by TEG
         - Race for the title charts
-      
+
+          
     2. **TEG Records**
         - Best TEGs, Rounds and 9s
         - Top n TEGs and Rounds
         - Personal Bests
         - Other Records
-      
+
+          
     3. **TEG Scoring**
         - Score by Par
         - Career Eagles, Birdies and Pars
         - Most birdies etc. in a round
         - Best Streaks
       
+        
     4. **Current TEG info**
         - Leaderboard
         - Latest round
