@@ -23,6 +23,7 @@ avg_grossvp['Total'] = all_data.groupby('Player')['GrossVP'].mean()
 avg_grossvp = avg_grossvp.sort_values('Total', ascending=True)
 avg_grossvp = avg_grossvp.round(2)
 
+
 def format_value(value):
     if value > 0:
         return f"+{value:.2f}"
@@ -34,7 +35,11 @@ def format_value(value):
 for column in avg_grossvp.columns:
     avg_grossvp[column] = avg_grossvp[column].apply(format_value)
 
-st.write(avg_grossvp.to_html(classes='dataframe, datawrapper-table'), unsafe_allow_html=True)
+avg_grossvp.reset_index(inplace=True)
+avg_grossvp.columns.name = None
+avg_grossvp.columns = ['Player'] + [f'Par {col}' if col != 'Total' else col for col in avg_grossvp.columns[1:]]
+
+st.write(avg_grossvp.to_html(classes='dataframe, datawrapper-table', index=False), unsafe_allow_html=True)
 
 '---'
 
