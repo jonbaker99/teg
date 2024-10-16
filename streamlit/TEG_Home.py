@@ -13,23 +13,23 @@ st.markdown(
     """
     ### Contents (use sidebar)
     1. TEG History
-      a) Winners by year
-      b) Results tables by TEG
-        - Race for the title charts
+      - Winners by year
+      - Results tables by TEG
+      - Race for the title charts
     2. TEG Records
-        a) Best TEGs, Rounds and 9s
-        b) Top n TEGs and Rounds
-        c) Personal Bests
-        d) Other Records
+        - Best TEGs, Rounds and 9s
+        - Top n TEGs and Rounds
+        - Personal Bests
+        - Other Records
     3. TEG Scoring
-        a) Score by Par
-        b) Career Eagles, Birdies and Pars
-        c) Most birdies etc. in a round
-        d) Best Streaks
+        - Score by Par
+        - Career Eagles, Birdies and Pars
+        - Most birdies etc. in a round
+        - Best Streaks
     4. Current TEG info
-        a) Leaderboard
-        b) Latest round
-        c) Data update
+        - Leaderboard
+        - Latest round
+        - Data update
    
 """
 )
