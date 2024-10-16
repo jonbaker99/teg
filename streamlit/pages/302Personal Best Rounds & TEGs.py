@@ -3,6 +3,7 @@ import streamlit as st
 import numpy as np, pandas as pd
 
 st.title('Personal Best TEGs and Rounds')
+datawrapper_table_css()
 
 teg_data_ranked = get_ranked_teg_data()
 rd_data_ranked = get_ranked_round_data()
