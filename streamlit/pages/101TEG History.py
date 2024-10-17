@@ -55,6 +55,15 @@ def create_bar_chart(df, x_col, y_col, title):
 
 # === DISPLAY CONTENT === #
 
+st.title("TEG History")
+
+'---'
+st.markdown("### Contents")
+st.markdown('1. Number of wins by player')
+st.markdown('2. TEG winners by year')
+st.markdown('3. Doubles')
+'---'
+
 # Show the 3 bar charts from the 'winners' page
 st.subheader("Competition wins")
 

@@ -5,6 +5,13 @@ import pandas as pd
 st.set_page_config(page_title="TEG Records", page_icon="⛳")
 st.title("TEG Records")
 
+'---'
+st.markdown("### Contents")
+st.markdown('1. Best TEGs')
+st.markdown('2. Best Rounds')
+st.markdown('3. Best 9s')
+'---'
+
 # Custom CSS
 st.markdown("""
     <style>
