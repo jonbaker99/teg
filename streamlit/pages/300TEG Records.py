@@ -96,7 +96,6 @@ def prepare_df(best_records, record_type):
     
     return df
 
-'---'
 
 tegs_ranked = get_ranked_teg_data()
 st.subheader('Best TEGs')
