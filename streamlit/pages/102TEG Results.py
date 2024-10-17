@@ -283,7 +283,7 @@ def main() -> None:
                                                         chart_type='stableford')
             else:
                 fig_stableford = create_cumulative_graph(all_data, chosen_teg, 'Adjusted Stableford', 
-                                                        f'Trophy race (Adjusted): {chosen_teg}', 
+                                                        f'Trophy race (Adjusted scale): {chosen_teg}', 
                                                         y_calculation=adjusted_stableford,
                                                         y_axis_label='Cumulative Stableford Points vs. net par',
                                                         chart_type='stableford')
@@ -320,7 +320,7 @@ def main() -> None:
                                                     chart_type='gross')
             else:
                 fig_grossvp = create_cumulative_graph(all_data, chosen_teg, 'Adjusted GrossVP', 
-                                                    f'Green Jacket race (Adjusted): {chosen_teg}', 
+                                                    f'Green Jacket race (Adjusted scale): {chosen_teg}', 
                                                     y_calculation=adjusted_grossvp,
                                                     y_axis_label='Cumulative gross vs. bogey golf (par+1)',
                                                     chart_type='gross')
