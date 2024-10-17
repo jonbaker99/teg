@@ -23,6 +23,14 @@ def reset_teg_selection():
 st.subheader("Round and TEG context")
 st.markdown('Shows how latest or selected rounds and TEGs compare to other rounds')
 
+name_mapping = {
+    'Gross vs Par': 'GrossVP',
+    'Score': 'Sc',
+    'Net vs Par': 'NetVP',
+    'Stableford': 'Stableford'
+}
+inverted_name_mapping = {v: k for k, v in name_mapping.items()}
+
 tab1, tab2 = st.tabs(["Chosen Round","Chosen TEG"])
 
 with tab1:
@@ -54,8 +62,10 @@ with tab1:
         st.button("Latest Round", on_click=reset_round_selection)
 
     # Display round context tables
-    for metric in ['Sc', 'GrossVP', 'NetVP', 'Stableford']:
-        st.markdown(f"**{metric}**")
+    for metric in ['Sc', 'Stableford', 'GrossVP', 'NetVP']:
+        '---'
+        friendly_metric = inverted_name_mapping.get(metric,metric)
+        st.markdown(f"#### {friendly_metric}")
         output = chosen_rd_context(df_round, teg_r, rd_r, metric)
         st.write(output.to_html(index=False, justify='left', classes='jb-table-test, datawrapper-table'), unsafe_allow_html=True)
 
@@ -79,7 +89,9 @@ with tab2:
         st.button("Latest TEG", on_click=reset_teg_selection)
 
     # Display TEG context tables
-    for metric in ['Sc', 'GrossVP', 'NetVP', 'Stableford']:
-        st.markdown(f"**{metric}**")
+    for metric in ['Sc', 'Stableford', 'GrossVP', 'NetVP']:
+        '---'
+        friendly_metric = inverted_name_mapping.get(metric,metric)
+        st.markdown(f"#### {friendly_metric}")
         output = chosen_teg_context(df_teg, teg_t, metric)
         st.write(output.to_html(index=False, justify='left', classes='jb-table-test, datawrapper-table'), unsafe_allow_html=True)
